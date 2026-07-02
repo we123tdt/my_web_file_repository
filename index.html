@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Audiowide&display=swap" rel="stylesheet">
+</head>
+<style>
+    body{
+        background-color: #0f172a; 
+        text-align: center;
+        font-family: 'Orbitron', 'Audiowide', sans-serif;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    /* 自定义滚动条样式 */
+    ::-webkit-scrollbar{
+        width: 10px;
+    }
+    ::-webkit-scrollbar-track{
+        background: #1e293b;
+    }
+    ::-webkit-scrollbar-thumb{
+        background: linear-gradient(180deg, #87CEEB, #ADD8E6);
+        border-radius: 5px;
+    }
+    ::-webkit-scrollbar-thumb:hover{
+        background: linear-gradient(180deg, #ADD8E6, #87CEEB);
+    }
+    h1{
+        color:rgb(76, 169, 250);
+        text-shadow: 0 0 20px rgb(76, 169, 250);
+    }
+    h2{
+        color:rgb(224, 207, 16);
+        text-shadow: 0 0 20px rgb(224, 207, 16);
+    }
+    .avatar-wrapper{
+        position: relative;
+        display: inline-block;
+        margin-top: 80px;
+    }
+    .typewriter-text{
+        position: absolute;
+        top: -60px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: #fff;
+        font-size: 28px;
+        font-weight: bold;
+        text-shadow: 
+            0 0 10px rgba(255,255,255,0.8),
+            0 0 20px rgba(255,255,255,0.6),
+            0 0 40px rgba(76, 169, 250,0.8),
+            0 0 80px rgba(76, 169, 250,0.6);
+        white-space: nowrap;
+        overflow: hidden;
+        border-right: 3px solid #fff;
+        animation: blinkCursor 0.8s step-end infinite;
+        letter-spacing: 4px;
+    }
+    @keyframes blinkCursor{
+        0%,100%{border-color: #fff;}
+        50%{border-color: transparent;}
+    }
+    img{
+        border-radius: 50%;
+        border:4px solid rgba(76, 169, 250,0.8);
+        width:auto;
+        height: auto;
+        object-fit: cover;
+        box-shadow: 
+            0 0 20px rgb(76, 169, 250),
+            0 0 40px rgba(76, 169, 250,0.6),
+            0 0 60px rgba(76, 169, 250,0.4),
+            0 0 100px rgba(76, 169, 250,0.2);
+        transition: box-shadow 0.3s ease, border-color 0.3s ease;
+    }
+    img:hover{
+        border-color: rgb(224, 207, 16);
+        box-shadow: 
+            0 0 20px rgb(224, 207, 16),
+            0 0 40px rgba(224, 207, 16,0.6),
+            0 0 60px rgba(224, 207, 16,0.4),
+            0 0 100px rgba(224, 207, 16,0.2);
+    }
+    img:active{
+        transform: scale(0.95);
+    }
+    @media (max-width: 768px){
+        img{
+            max-width: 80vw;
+            height: auto;
+        }
+        .typewriter-text{
+            font-size: 20px;
+            top: -50px;
+        }
+        h1{
+            font-size: 24px;
+        }
+        h2{
+            font-size: 18px;
+        }
+        .glow-button{
+            padding: 12px 30px;
+            font-size: 16px;
+        }
+    }
+    @media (max-width: 480px){
+        img{
+            max-width: 60vw;
+        }
+        .typewriter-text{
+            font-size: 16px;
+            letter-spacing: 2px;
+        }
+    }
+    @keyframes leftRightMove{
+        0%{transform: translateX(30px);}
+        100%{transform: translateX(-30px);}
+    }
+    a{
+        text-decoration: none;
+    }
+    a h1{
+        margin-top: 60px;
+        animation: leftRightMove 2s ease-in-out infinite alternate;
+        color: rgb(35, 164, 224);
+        text-shadow: 0 0 40px rgb(35, 164, 224);
+    }
+    #rainCanvas{
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+        pointer-events: none;
+    }
+    .AlertPlus{
+        background-color: black;
+        color:red;
+        position: fixed;
+        left: 50%;
+        top: 50%;
+        border:2px solid red;
+        box-shadow: 0 0 20px red;
+        padding: 10px 20px;
+        font-weight: bold;
+        border-radius: 5px;
+        transform: scale(0.1);
+        opacity: 0;
+        transition: all 0.5s;
+    }
+    .glow-button{
+        margin-top: 40px;
+        padding: 15px 40px;
+        font-size: 18px;
+        font-weight: bold;
+        font-family: inherit;
+        background: linear-gradient(135deg, #87CEEB, #ADD8E6);
+        color: #0f172a;
+        border: none;
+        border-radius: 50px;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 
+            0 0 20px rgba(135, 206, 235, 0.6),
+            0 0 40px rgba(135, 206, 235, 0.4),
+            0 0 60px rgba(135, 206, 235, 0.2);
+        animation: pulseGlow 2s ease-in-out infinite;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .glow-button:hover{
+        transform: scale(1.05);
+        box-shadow: 
+            0 0 30px rgba(135, 206, 235, 0.8),
+            0 0 60px rgba(135, 206, 235, 0.6),
+            0 0 90px rgba(135, 206, 235, 0.4);
+    }
+    .glow-button:active{
+        transform: scale(0.95);
+    }
+    .glow-button::before{
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(
+            45deg,
+            transparent,
+            rgba(255, 255, 255, 0.3),
+            transparent
+        );
+        transform: rotate(45deg);
+        animation: shimmer 3s infinite;
+    }
+    @keyframes pulseGlow{
+        0%, 100%{
+            box-shadow: 
+                0 0 20px rgba(135, 206, 235, 0.6),
+                0 0 40px rgba(135, 206, 235, 0.4),
+                0 0 60px rgba(135, 206, 235, 0.2);
+        }
+        50%{
+            box-shadow: 
+                0 0 30px rgba(135, 206, 235, 0.8),
+                0 0 50px rgba(135, 206, 235, 0.6),
+                0 0 80px rgba(135, 206, 235, 0.4);
+        }
+    }
+    @keyframes shimmer{
+        0%{ transform: translateX(-100%) rotate(45deg); }
+        100%{ transform: translateX(100%) rotate(45deg); }
+    }
+    .modal-overlay{
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(5px);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+        animation: fadeIn 0.3s ease;
+    }
+    .modal-content{
+        display: block;
+        background: linear-gradient(135deg, #1e293b, #0f172a);
+        border: 2px solid rgba(135, 206, 235, 0.5);
+        border-radius: 20px;
+        padding: 40px;
+        max-width: 500px;
+        width: 90%;
+        position: relative;
+        box-shadow:
+            0 0 30px rgba(135, 206, 235, 0.3),
+            0 0 60px rgba(135, 206, 235, 0.1);
+        animation: slideUp 0.3s ease;
+        text-align: center;
+        color: #fff;
+    }
+    .modal-content h2{
+        color: rgb(135, 206, 235);
+        text-shadow: 0 0 20px rgba(135, 206, 235, 0.5);
+        margin-bottom: 20px;
+    }
+    .modal-content p{
+        margin: 15px 0;
+        line-height: 1.6;
+        color: #cbd5e1;
+    }
+    .modal-content ul{
+        text-align: left;
+        list-style: none;
+        padding: 0 20px;
+        margin: 20px 0;
+    }
+    .modal-content ul li{
+        padding: 8px 0;
+        color: #94a3b8;
+        position: relative;
+        padding-left: 25px;
+    }
+    .modal-content ul li::before{
+        content: ">";
+        position: absolute;
+        left: 0;
+        color: rgb(135, 206, 235);
+        font-weight: bold;
+    }
+    .modal-close{
+        position: absolute;
+        top: 15px;
+        right: 20px;
+        background: none;
+        border: none;
+        color: #94a3b8;
+        font-size: 30px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        line-height: 1;
+        padding: 0;
+        width: 30px;
+        height: 30px;
+    }
+    .modal-close:hover{
+        color: rgb(135, 206, 235);
+        transform: rotate(90deg);
+        text-shadow: 0 0 10px rgba(135, 206, 235, 0.5);
+    }
+    @keyframes fadeIn{
+        from{ opacity: 0; }
+        to{ opacity: 1; }
+    }
+    @keyframes slideUp{
+        from{
+            opacity: 0;
+            transform: translateY(50px) scale(0.9);
+        }
+        to{
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+    @media (max-width: 768px){
+        .modal-content{
+            padding: 30px 20px;
+        }
+        .modal-content h2{
+            font-size: 20px;
+        }
+    }
+    .visitor-count{
+        margin-top: 30px;
+        color: #94a3b8;
+        font-size: 16px;
+        letter-spacing: 1px;
+        text-shadow: 0 0 10px rgba(135, 206, 235, 0.3);
+    }
+    .visitor-count .count-number{
+        color: rgb(135, 206, 235);
+        font-weight: bold;
+        font-size: 20px;
+        text-shadow: 0 0 15px rgba(135, 206, 235, 0.6);
+        margin: 0 5px;
+    }
+    .navbar{
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 60px;
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95));
+        backdrop-filter: blur(10px);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 20px;
+        box-shadow: 
+            0 2px 20px rgba(76, 169, 250, 0.3),
+            0 0 40px rgba(76, 169, 250, 0.1);
+        z-index: 9999;
+        border-bottom: 1px solid rgba(135, 206, 235, 0.3);
+        box-sizing: border-box;
+        overflow: hidden;
+    }
+    .navbar-title{
+        color: rgb(135, 206, 235);
+        font-size: 20px;
+        font-weight: bold;
+        text-shadow: 0 0 10px rgba(135, 206, 235, 0.5);
+        letter-spacing: 2px;
+    }
+    .navbar-time{
+        color: #fff;
+        font-size: 14px;
+        font-weight: bold;
+        text-shadow: 
+            0 0 10px rgba(255, 255, 255, 0.8),
+            0 0 20px rgba(76, 169, 250, 0.6);
+        letter-spacing: 2px;
+        font-family: 'Courier New', monospace;
+        white-space: nowrap;
+    }
+    .navbar-right{
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        flex-shrink: 0;
+    }
+    .download-button{
+        padding: 8px 16px;
+        font-size: 14px;
+        font-weight: bold;
+        font-family: inherit;
+        background: linear-gradient(135deg, #87CEEB, #ADD8E6);
+        color: #0f172a;
+        border: none;
+        border-radius: 20px;
+        cursor: pointer;
+        text-decoration: none;
+        box-shadow: 
+            0 0 10px rgba(135, 206, 235, 0.6),
+            0 0 20px rgba(135, 206, 235, 0.4);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .download-button:hover{
+        transform: scale(1.05);
+        box-shadow: 
+            0 0 20px rgba(135, 206, 235, 0.8),
+            0 0 30px rgba(135, 206, 235, 0.6);
+    }
+    .download-button:active{
+        transform: scale(0.95);
+    }
+    .main-content{
+        margin-top: 80px;
+    }
+</style>
+<div class="navbar">
+    <div class="navbar-title">AP STUDIO</div>
+    <div class="navbar-right">
+        <button class="download-button" onclick="downloadLatest()">📥 Download</button>
+        <div class="navbar-time" id="navbarTime"></div>
+    </div>
+</div>
+<div class="main-content">
+<h1>😊Welcome😊</h1>
+<h2>🤔What's Inside?🤔</h2> 
+<canvas id="rainCanvas"></canvas>
+<div class="avatar-wrapper">
+    <div class="typewriter-text" id="typewriter"></div>
+    <img src="head.png" width="300" onclick="hackerAttack()" alt="点击触发特效">
+</div>
+
+
+<a href="https://www.github.com">
+    <h1>
+        🎯 Explore Github 🎯
+    </h1>
+</a>
+
+<button class="glow-button" onclick="openModal()">Clear Alerts</button>
+
+<div class="visitor-count">
+    你是第 <span class="count-number" id="visitorCount">--</span> 位访客
+</div>
+</div>
+
+<!-- 模态窗口 -->
+<div id="infoModal" class="modal-overlay" onclick="closeModalOutside(event)">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+        <h2>Welcome!</h2>
+        <p>This is a cool interactive page with:</p>
+        <ul>
+            <li>Cyberpunk rain effect</li>
+            <li>Typewriter animation</li>
+            <li>Interactive avatar</li>
+            <li>Glowing buttons</li>
+        </ul>
+        <p>Click the avatar to trigger the alert!</p>
+        <button class="glow-button" onclick="clearAllAlerts(); closeModal();">Clear All Alerts</button>
+    </div>
+</div>
+
+<script>
+    // ========== 配置常量 ==========
+    const CONFIG = {
+        RAIN: { dropCount: 120, windOffset: 0.15 },
+        TYPEWRITER: { typeSpeed: 150, deleteSpeed: 80, pauseTime: 1500 },
+        HACKER: { alertCount: 100, autoRemoveMinDelay: 3000, autoRemoveMaxDelay: 5000, cooldownTime: 2500 }
+    };
+
+    // ========== 下雨效果 ==========
+    const canvas = document.getElementById('rainCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let drops = [];
+    let isAttacking = false;
+    let lastTime = 0;
+
+    function resizeCanvas(){
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+
+    function createRaindrops(){
+        drops = [];
+        for(let i = 0; i < CONFIG.RAIN.dropCount; i++){
+            drops.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height * -1,
+                length: Math.random() * 25 + 20,
+                speed: Math.random() * 150 + 100,
+                opacity: Math.random() * 0.4 + 0.3
+            });
+        }
+    }
+
+    function updateRain(deltaTime){
+        const deltaSeconds = deltaTime / 1000;
+        for(const drop of drops){
+            drop.y += drop.speed * deltaSeconds;
+            if(drop.y > canvas.height + 20){
+                drop.y = -drop.length;
+                drop.x = Math.random() * canvas.width;
+            }
+        }
+    }
+
+    function drawRain(){
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for(const drop of drops){
+            ctx.beginPath();
+            ctx.moveTo(drop.x, drop.y);
+            ctx.lineTo(drop.x, drop.y + drop.length);
+            ctx.strokeStyle = `rgba(174, 194, 224, ${drop.opacity})`;
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+        }
+    }
+
+    function animateRain(currentTime){
+        if(!lastTime) lastTime = currentTime;
+        const deltaTime = currentTime - lastTime;
+        lastTime = currentTime;
+
+        updateRain(deltaTime);
+        drawRain();
+        requestAnimationFrame(animateRain);
+    }
+
+    window.addEventListener('resize', () => {
+        resizeCanvas();
+        createRaindrops();
+    });
+
+    resizeCanvas();
+    createRaindrops();
+    requestAnimationFrame(animateRain);
+
+    // ========== 打字机效果 ==========
+    const typewriterEl = document.getElementById('typewriter');
+    const texts = ['Welcome!', 'Amazing!'];
+    let textIndex = 0;
+    let charIndex = 0;
+    let isDeleting = false;
+
+    function typeEffect(){
+        const currentText = texts[textIndex];
+        if(isDeleting){
+            charIndex--;
+            typewriterEl.textContent = currentText.substring(0, charIndex);
+        }else{
+            charIndex++;
+            typewriterEl.textContent = currentText.substring(0, charIndex);
+        }
+
+        let delay = isDeleting ? CONFIG.TYPEWRITER.deleteSpeed : CONFIG.TYPEWRITER.typeSpeed;
+
+        if(!isDeleting && charIndex === currentText.length){
+            delay = CONFIG.TYPEWRITER.pauseTime;
+            isDeleting = true;
+        }else if(isDeleting && charIndex === 0){
+            isDeleting = false;
+            textIndex = (textIndex + 1) % texts.length;
+            delay = 500;
+        }
+
+        setTimeout(typeEffect, delay);
+    }
+
+    typeEffect();
+
+    // ========== 恶搞逻辑 ==========
+    const alertBoxes = [];
+
+    function hackerAttack(){
+        if(isAttacking) return;
+
+        isAttacking = true;
+        const n = CONFIG.HACKER.alertCount;
+
+        for(let i = 1; i <= n; i++){
+            setTimeout(() =>{
+                let box = document.createElement("div");
+                box.innerText = "⚠️⚠️⚠️SYSTEM BREACH!⚠️⚠️⚠️";
+                document.body.appendChild(box);
+                box.className = "AlertPlus";
+                alertBoxes.push(box);
+
+                box.offsetHeight;
+
+                box.style.left = (Math.random() * 100) + "%";
+                box.style.top = (Math.random() * 100) + "%";
+                box.style.opacity = "1";
+                box.style.transform = `scale(${Math.random() + 0.5}) rotate(${Math.random() * 60 - 30}deg)`;
+
+                box.onclick = function() {
+                    removeAlertBox(box);
+                };
+
+                const autoRemoveDelay = CONFIG.HACKER.autoRemoveMinDelay +
+                    Math.random() * (CONFIG.HACKER.autoRemoveMaxDelay - CONFIG.HACKER.autoRemoveMinDelay);
+                setTimeout(() => {
+                    removeAlertBox(box);
+                }, autoRemoveDelay);
+            }, i*20);
+        }
+
+        setTimeout(() => {
+            isAttacking = false;
+        }, CONFIG.HACKER.cooldownTime);
+    }
+
+    function removeAlertBox(box){
+        const index = alertBoxes.indexOf(box);
+        if(index !== -1){
+            alertBoxes.splice(index, 1);
+        }
+        box.style.opacity = "0";
+        box.style.transform = "scale(0.1)";
+        setTimeout(() => {
+            if(box.parentNode){
+                box.parentNode.removeChild(box);
+            }
+        }, 500);
+    }
+
+    function clearAllAlerts(){
+        while(alertBoxes.length > 0){
+            removeAlertBox(alertBoxes[0]);
+        }
+    }
+
+    function openModal(){
+        const modal = document.getElementById('infoModal');
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal(){
+        const modal = document.getElementById('infoModal');
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+
+    function closeModalOutside(event){
+        if(event.target.id === 'infoModal'){
+            closeModal();
+        }
+    }
+
+    document.addEventListener('keydown', function(event){
+        if(event.key === 'Escape'){
+            closeModal();
+        }
+    });
+
+    // ========== 访客计数 ==========
+    async function updateVisitorCount(){
+        const countEl = document.getElementById('visitorCount');
+
+        try {
+            const res = await fetch('/api/visitor', { cache: 'no-store' });
+            if (!res.ok) throw new Error('API error (status: ' + res.status + ')');
+            let data;
+            try {
+                data = await res.json();
+            } catch (parseError) {
+                throw new Error('Server returned HTML instead of JSON. Run with `npx wrangler pages dev` for API support.');
+            }
+            countEl.textContent = data.count.toLocaleString();
+        } catch (e) {
+            // 使用 localStorage 作为备用计数方案
+            const stored = localStorage.getItem('visitorCount');
+            let count = stored ? parseInt(stored) : 0;
+            const hasVisited = sessionStorage.getItem('hasVisited');
+            if (!hasVisited) {
+                count++;
+                localStorage.setItem('visitorCount', count);
+                sessionStorage.setItem('hasVisited', 'true');
+            }
+            countEl.textContent = count.toLocaleString();
+
+            // 尝试加载 busuanzi（仅当尚未加载时）
+            if (!document.getElementById('busuanzi_script')) {
+                const script = document.createElement('script');
+                script.id = 'busuanzi_script';
+                script.src = 'https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js';
+                script.async = true;
+                script.onerror = function(){
+                    // busuanzi 加载失败，已使用 localStorage 计数，无需额外操作
+                };
+                script.onload = function(){
+                    let timedOut = false;
+                    const timeoutId = setTimeout(() => {
+                        timedOut = true;
+                        if (countEl.textContent === '--') {
+                            const stored = localStorage.getItem('visitorCount');
+                            countEl.textContent = stored || '0';
+                        }
+                    }, 8000);
+
+                    const checkCount = setInterval(() => {
+                        if (timedOut) {
+                            clearInterval(checkCount);
+                            return;
+                        }
+                        const count = document.getElementById('busuanzi_value_site_uv');
+                        if (count && count.textContent && count.textContent !== '...') {
+                            countEl.textContent = count.textContent;
+                            clearInterval(checkCount);
+                            clearTimeout(timeoutId);
+                        }
+                    }, 200);
+                };
+
+                // 仅当 busuanzi 容器不存在时才创建
+                if (!document.getElementById('busuanzi_container_site_uv')) {
+                    const hiddenSpan = document.createElement('span');
+                    hiddenSpan.id = 'busuanzi_container_site_uv';
+                    hiddenSpan.style.display = 'none';
+                    hiddenSpan.innerHTML = '<span id="busuanzi_value_site_uv"></span>';
+                    document.body.appendChild(hiddenSpan);
+                }
+
+                document.head.appendChild(script);
+            }
+        }
+    }
+
+    updateVisitorCount();
+
+    function updateTime(){
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        const month = String(now.getMonth()+1).padStart(2, '0');
+        const date = String(now.getDate()).padStart(2, '0');
+        const dateStr = `${month}/${date}`;
+        const timeStr = `${hours}:${minutes}:${seconds}`;
+        document.getElementById('navbarTime').textContent = `${dateStr} ${timeStr}`;
+    }
+
+    updateTime();
+    setInterval(updateTime, 1000);
+
+    async function downloadLatest(){
+        const button = document.querySelector('.download-button');
+        const originalText = button.textContent;
+        button.textContent = '⏳ Loading...';
+        button.disabled = true;
+
+        try {
+            let downloadUrl = '/files/web.zip';
+            let fileName = 'web.zip';
+
+            const latestResponse = await fetch('/api/latest-file', { cache: 'no-store' });
+            if (latestResponse.ok) {
+                const latestData = await latestResponse.json();
+                if (latestData.success && latestData.latest) {
+                    downloadUrl = latestData.latest.url;
+                    fileName = latestData.latest.name;
+                } else if (latestData.fallbackUrl) {
+                    downloadUrl = latestData.fallbackUrl;
+                }
+            }
+
+            if (downloadUrl.includes('?')) {
+                downloadUrl += `&timestamp=${Date.now()}`;
+            } else {
+                downloadUrl += `?timestamp=${Date.now()}`;
+            }
+
+            const response = await fetch(downloadUrl, { cache: 'no-store' });
+            
+            if (!response.ok) {
+                throw new Error('File not found');
+            }
+
+            const blob = await response.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(blobUrl);
+        } catch (error) {
+            alert('Download failed: ' + error.message);
+        } finally {
+            button.textContent = originalText;
+            button.disabled = false;
+        }
+    }
+</script>

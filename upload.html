@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Upload Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: rgba(30, 41, 59, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 
+                0 2px 20px rgba(76, 169, 250, 0.3),
+                0 0 40px rgba(76, 169, 250, 0.1);
+            border: 1px solid rgba(135, 206, 235, 0.3);
+        }
+        
+        .login-container {
+            display: none;
+        }
+        
+        .login-container.active {
+            display: block;
+        }
+        
+        .upload-container {
+            display: none;
+        }
+        
+        .upload-container.active {
+            display: block;
+        }
+        
+        h1 {
+            color: #fff;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 28px;
+            text-shadow: 
+                0 0 10px rgba(255, 255, 255, 0.8),
+                0 0 20px rgba(76, 169, 250, 0.6);
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            color: #94a3b8;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        input[type="password"], input[type="text"] {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid rgba(135, 206, 235, 0.3);
+            border-radius: 10px;
+            background: rgba(15, 23, 42, 0.8);
+            color: #fff;
+            font-size: 16px;
+            outline: none;
+            transition: all 0.3s;
+        }
+        
+        input[type="password"]:focus, input[type="text"]:focus {
+            border-color: #4ca9fa;
+            box-shadow: 0 0 10px rgba(76, 169, 250, 0.3);
+        }
+        
+        button {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #4ca9fa, #3b82f6);
+            color: #fff;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 15px rgba(76, 169, 250, 0.4);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(76, 169, 250, 0.6);
+        }
+        
+        .btn-secondary {
+            background: rgba(135, 206, 235, 0.2);
+            color: #fff;
+            border: 1px solid rgba(135, 206, 235, 0.3);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(135, 206, 235, 0.3);
+        }
+        
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            padding: 6px 12px;
+            width: auto;
+            font-size: 12px;
+        }
+        
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, 0.3);
+        }
+        
+        .file-list {
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border: 1px solid rgba(135, 206, 235, 0.1);
+        }
+        
+        .file-name {
+            color: #fff;
+            font-size: 14px;
+        }
+        
+        .file-name.latest {
+            color: #4ca9fa;
+            font-weight: bold;
+        }
+        
+        .status-message {
+            text-align: center;
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .status-success {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+        
+        .status-error {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+        
+        .status-info {
+            background: rgba(76, 169, 250, 0.2);
+            color: #4ca9fa;
+        }
+        
+        .upload-area {
+            border: 2px dashed rgba(135, 206, 235, 0.3);
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+        
+        .upload-area:hover {
+            border-color: #4ca9fa;
+            background: rgba(76, 169, 250, 0.1);
+        }
+        
+        .upload-area.dragover {
+            border-color: #4ca9fa;
+            background: rgba(76, 169, 250, 0.2);
+        }
+        
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        
+        .upload-text {
+            color: #94a3b8;
+            font-size: 16px;
+        }
+        
+        .upload-hint {
+            color: #64748b;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+        
+        #fileInput {
+            display: none;
+        }
+        
+        .header {
+            margin-bottom: 30px;
+        }
+        
+        .header h2 {
+            color: #fff;
+            font-size: 20px;
+            margin-bottom: 5px;
+        }
+        
+        .header p {
+            color: #64748b;
+            font-size: 12px;
+        }
+        
+        .action-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .action-row input {
+            flex: 1;
+        }
+        
+        .action-row button {
+            flex: 0 0 100px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="login-container active">
+            <h1>🔒 Admin Login</h1>
+            <div class="input-group">
+                <label for="password">Access Password</label>
+                <input type="password" id="password" placeholder="Enter password">
+            </div>
+            <button class="btn-primary" onclick="login()">Login</button>
+            <div id="loginStatus" class="status-message"></div>
+        </div>
+        
+        <div class="upload-container">
+            <div class="header">
+                <h2>📁 File Management</h2>
+                <p>Manage download files. Note: Actual files must be uploaded via deployment.</p>
+            </div>
+            
+            <div class="action-row">
+                <input type="text" id="newFileName" placeholder="File name (e.g., web_v2.zip)">
+                <button class="btn-primary" onclick="addFile()">Add</button>
+            </div>
+            
+            <div class="file-list" id="fileList">
+                <div class="status-message status-info">Loading file list...</div>
+            </div>
+            
+            <div id="uploadStatus" class="status-message"></div>
+            
+            <button class="btn-secondary" onclick="logout()" style="margin-top: 20px;">Logout</button>
+        </div>
+    </div>
+    
+    <script>
+        const PASSWORD = '170254';
+        
+        function showStatus(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = 'status-message status-' + type;
+            element.style.display = 'block';
+            setTimeout(() => {
+                element.style.display = 'none';
+            }, 3000);
+        }
+        
+        async function login() {
+            const password = document.getElementById('password').value;
+            if (password === PASSWORD) {
+                document.querySelector('.login-container').classList.remove('active');
+                document.querySelector('.upload-container').classList.add('active');
+                localStorage.setItem('upload_auth', 'true');
+                loadFiles();
+            } else {
+                showStatus('loginStatus', '❌ Wrong password', 'error');
+            }
+        }
+        
+        function logout() {
+            localStorage.removeItem('upload_auth');
+            document.querySelector('.upload-container').classList.remove('active');
+            document.querySelector('.login-container').classList.add('active');
+            document.getElementById('password').value = '';
+        }
+        
+        async function loadFiles() {
+            try {
+                const response = await fetch('/api/manage-files?action=get');
+                const files = await response.json();
+                
+                const fileList = document.getElementById('fileList');
+                
+                if (!Array.isArray(files) || files.length === 0) {
+                    fileList.innerHTML = '<div class="status-message status-info">No files configured. Add files above.</div>';
+                    return;
+                }
+                
+                files.sort((a, b) => {
+                    const getVersion = (name) => {
+                        const dateTimeMatch = name.match(/(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})/);
+                        if (dateTimeMatch) return parseInt(dateTimeMatch[1] + dateTimeMatch[2] + dateTimeMatch[3] + dateTimeMatch[4] + dateTimeMatch[5]);
+                        const dateMatch = name.match(/(\d{4})(\d{2})(\d{2})/);
+                        if (dateMatch) return parseInt(dateMatch[1] + dateMatch[2] + dateMatch[3]);
+                        const versionMatch = name.match(/v(\d+)/);
+                        if (versionMatch) return parseInt(versionMatch[1]) * 100000000;
+                        return 0;
+                    };
+                    return getVersion(b.name) - getVersion(a.name);
+                });
+                
+                let html = '';
+                files.forEach((file, index) => {
+                    const isLatest = index === 0;
+                    html += `
+                        <div class="file-item">
+                            <span class="file-name ${isLatest ? 'latest' : ''}">${file.name} ${isLatest ? '(Latest)' : ''}</span>
+                            <button class="btn-danger" onclick="removeFile('${file.name}')">Remove</button>
+                        </div>
+                    `;
+                });
+                
+                fileList.innerHTML = html;
+            } catch (error) {
+                showStatus('uploadStatus', '❌ Failed to load files: ' + error.message, 'error');
+            }
+        }
+        
+        async function addFile() {
+            const fileName = document.getElementById('newFileName').value.trim();
+            
+            if (!fileName) {
+                showStatus('uploadStatus', '❌ Please enter file name', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/manage-files?action=add&name=${encodeURIComponent(fileName)}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    showStatus('uploadStatus', '✅ File added successfully', 'success');
+                    document.getElementById('newFileName').value = '';
+                    loadFiles();
+                } else {
+                    showStatus('uploadStatus', '❌ ' + (result.error || 'Failed to add file'), 'error');
+                }
+            } catch (error) {
+                showStatus('uploadStatus', '❌ Failed to add file: ' + error.message, 'error');
+            }
+        }
+        
+        async function removeFile(fileName) {
+            if (!confirm(`Are you sure you want to remove "${fileName}"?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/manage-files?action=remove&name=${encodeURIComponent(fileName)}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    showStatus('uploadStatus', '✅ File removed successfully', 'success');
+                    loadFiles();
+                } else {
+                    showStatus('uploadStatus', '❌ ' + (result.error || 'Failed to remove file'), 'error');
+                }
+            } catch (error) {
+                showStatus('uploadStatus', '❌ Failed to remove file: ' + error.message, 'error');
+            }
+        }
+        
+        document.getElementById('password').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                login();
+            }
+        });
+        
+        document.getElementById('newFileName').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                addFile();
+            }
+        });
+        
+        if (localStorage.getItem('upload_auth') === 'true') {
+            document.querySelector('.login-container').classList.remove('active');
+            document.querySelector('.upload-container').classList.add('active');
+            loadFiles();
+        }
+    </script>
+</body>
+</html>

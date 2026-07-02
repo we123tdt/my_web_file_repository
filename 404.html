@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - Page Not Found</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Audiowide&display=swap" rel="stylesheet">
+</head>
+<style>
+    body{
+        background-color: #0f172a;
+        text-align: center;
+        font-family: 'Orbitron', 'Audiowide', sans-serif;
+        overflow: hidden;
+    }
+    #rainCanvas{
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+        pointer-events: none;
+    }
+    .container{
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        padding: 20px;
+    }
+    .error-code{
+        font-size: 120px;
+        color: rgb(224, 207, 16);
+        text-shadow: 
+            0 0 20px rgb(224, 207, 16),
+            0 0 40px rgba(224, 207, 16, 0.8),
+            0 0 80px rgba(224, 207, 16, 0.6);
+        animation: pulse 2s ease-in-out infinite;
+        margin-bottom: 20px;
+    }
+    @keyframes pulse{
+        0%, 100%{
+            text-shadow: 
+                0 0 20px rgb(224, 207, 16),
+                0 0 40px rgba(224, 207, 16, 0.8),
+                0 0 80px rgba(224, 207, 16, 0.6);
+        }
+        50%{
+            text-shadow: 
+                0 0 30px rgb(224, 207, 16),
+                0 0 60px rgba(224, 207, 16, 0.8),
+                0 0 120px rgba(224, 207, 16, 0.6);
+        }
+    }
+    .error-message{
+        color: #94a3b8;
+        font-size: 24px;
+        margin-bottom: 30px;
+        letter-spacing: 2px;
+    }
+    .glow-button{
+        padding: 15px 40px;
+        font-size: 18px;
+        font-weight: bold;
+        font-family: inherit;
+        background: linear-gradient(135deg, #87CEEB, #ADD8E6);
+        color: #0f172a;
+        border: none;
+        border-radius: 50px;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 
+            0 0 20px rgba(135, 206, 235, 0.6),
+            0 0 40px rgba(135, 206, 235, 0.4),
+            0 0 60px rgba(135, 206, 235, 0.2);
+        animation: pulseGlow 2s ease-in-out infinite;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+    }
+    .glow-button:hover{
+        transform: scale(1.05);
+        box-shadow: 
+            0 0 30px rgba(135, 206, 235, 0.8),
+            0 0 60px rgba(135, 206, 235, 0.6),
+            0 0 90px rgba(135, 206, 235, 0.4);
+    }
+    @keyframes pulseGlow{
+        0%, 100%{
+            box-shadow: 
+                0 0 20px rgba(135, 206, 235, 0.6),
+                0 0 40px rgba(135, 206, 235, 0.4),
+                0 0 60px rgba(135, 206, 235, 0.2);
+        }
+        50%{
+            box-shadow: 
+                0 0 30px rgba(135, 206, 235, 0.8),
+                0 0 50px rgba(135, 206, 235, 0.6),
+                0 0 80px rgba(135, 206, 235, 0.4);
+        }
+    }
+    @media (max-width: 768px){
+        .error-code{
+            font-size: 80px;
+        }
+        .error-message{
+            font-size: 18px;
+        }
+        .glow-button{
+            padding: 12px 30px;
+            font-size: 16px;
+        }
+    }
+</style>
+<body>
+    <canvas id="rainCanvas"></canvas>
+    <div class="container">
+        <div class="error-code">404</div>
+        <div class="error-message">PAGE NOT FOUND</div>
+        <a href="/" class="glow-button">RETURN TO HOME</a>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('rainCanvas');
+        const ctx = canvas.getContext('2d');
+        let drops = [];
+
+        function resizeCanvas(){
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        function createRaindrops(){
+            drops = [];
+            for(let i = 0; i < 120; i++){
+                drops.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height * -1,
+                    length: Math.random() * 25 + 20,
+                    speed: Math.random() * 150 + 100,
+                    opacity: Math.random() * 0.4 + 0.3
+                });
+            }
+        }
+
+        function updateRain(deltaTime){
+            const deltaSeconds = deltaTime / 1000;
+            for(const drop of drops){
+                drop.y += drop.speed * deltaSeconds;
+                if(drop.y > canvas.height + 20){
+                    drop.y = -drop.length;
+                    drop.x = Math.random() * canvas.width;
+                }
+            }
+        }
+
+        function drawRain(){
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for(const drop of drops){
+                ctx.beginPath();
+                ctx.moveTo(drop.x, drop.y);
+                ctx.lineTo(drop.x, drop.y + drop.length);
+                ctx.strokeStyle = `rgba(174, 194, 224, ${drop.opacity})`;
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            }
+        }
+
+        let lastTime = 0;
+        function animateRain(currentTime){
+            if(!lastTime) lastTime = currentTime;
+            const deltaTime = currentTime - lastTime;
+            lastTime = currentTime;
+            updateRain(deltaTime);
+            drawRain();
+            requestAnimationFrame(animateRain);
+        }
+
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+            createRaindrops();
+        });
+
+        resizeCanvas();
+        createRaindrops();
+        requestAnimationFrame(animateRain);
+    </script>
+</body>
+</html>
