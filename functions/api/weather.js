@@ -4,6 +4,7 @@ export async function onRequest(context) {
     const city = url.searchParams.get('city');
 
     const API_KEY = env.QWEATHER_KEY;
+    const API_HOST = env.QWEATHER_HOST;
 
     if (!city) {
         return new Response(JSON.stringify({ error: 'City parameter is required' }), {
@@ -19,12 +20,24 @@ export async function onRequest(context) {
         });
     }
 
+    if (!API_HOST) {
+        return new Response(JSON.stringify({ error: 'API Host not configured. Please set QWEATHER_HOST in environment variables.' }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+
     try {
-        const geoUrl = `https://geoapi.qweather.com/v2/city/lookup?location=${encodeURIComponent(city)}&key=${API_KEY}`;
-        const geoRes = await fetch(geoUrl);
+        const geoUrl = `https://${API_HOST}/geo/v2/city/lookup?location=${encodeURIComponent(city)}`;
+        const geoRes = await fetch(geoUrl, {
+            headers: {
+                'Authorization': `Bearer ${API_KEY}`
+            }
+        });
         
         if (!geoRes.ok) {
-            return new Response(JSON.stringify({ error: `Geo API request failed: ${geoRes.status}` }), {
+            const errorText = await geoRes.text();
+            return new Response(JSON.stringify({ error: `Geo API request failed: ${geoRes.status}. ${errorText}` }), {
                 status: 500,
                 headers: { 'Content-Type': 'application/json' }
             });
@@ -32,7 +45,7 @@ export async function onRequest(context) {
         
         const geoText = await geoRes.text();
         if (!geoText) {
-            return new Response(JSON.stringify({ error: 'Geo API returned empty response. Check your API key.' }), {
+            return new Response(JSON.stringify({ error: 'Geo API returned empty response. Check your API key and host.' }), {
                 status: 500,
                 headers: { 'Content-Type': 'application/json' }
             });
@@ -50,12 +63,16 @@ export async function onRequest(context) {
         const location = geoData.location[0];
         const locationId = location.id;
 
-        const weatherUrl = `https://devapi.qweather.com/v7/weather/now?location=${locationId}&key=${API_KEY}`;
-        const forecastUrl = `https://devapi.qweather.com/v7/weather/3d?location=${locationId}&key=${API_KEY}`;
+        const weatherUrl = `https://${API_HOST}/weather/v7/now?location=${locationId}`;
+        const forecastUrl = `https://${API_HOST}/weather/v7/3d?location=${locationId}`;
         
         const [weatherRes, forecastRes] = await Promise.all([
-            fetch(weatherUrl),
-            fetch(forecastUrl)
+            fetch(weatherUrl, {
+                headers: { 'Authorization': `Bearer ${API_KEY}` }
+            }),
+            fetch(forecastUrl, {
+                headers: { 'Authorization': `Bearer ${API_KEY}` }
+            })
         ]);
 
         if (!weatherRes.ok) {
