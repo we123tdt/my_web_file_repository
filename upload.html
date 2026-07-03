@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>File Upload Management</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700;900&display=swap" rel="stylesheet">
+    <title>文件上传管理</title>
     <style>
         * {
             margin: 0;
@@ -12,7 +13,7 @@
         }
         
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Noto Sans SC', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #0f172a, #1e293b);
             min-height: 100vh;
             display: flex;
@@ -396,49 +397,49 @@
 <body>
     <div class="container">
         <div class="login-container active">
-            <h1>🔒 Admin Login</h1>
+            <h1>🔒 管理员登录</h1>
             <div class="input-group">
-                <label for="password">Access Password</label>
-                <input type="password" id="password" placeholder="Enter password">
+                <label for="password">访问密码</label>
+                <input type="password" id="password" placeholder="输入密码">
             </div>
-            <button class="btn-primary" onclick="login()">Login</button>
+            <button class="btn-primary" onclick="login()">登录</button>
             <div id="loginStatus" class="status-message"></div>
         </div>
         
         <div class="upload-container">
             <div class="header">
-                <h2>📁 File Management</h2>
-                <p>Manage download files. Note: Actual files must be uploaded via deployment.</p>
+                <h2>📁 文件管理</h2>
+                <p>管理下载文件。注意：实际文件需通过部署上传。</p>
             </div>
             
             <div class="action-row">
-                <input type="text" id="newFileName" placeholder="File name (e.g., web_v2.zip)">
-                <button class="btn-primary" onclick="addFile()">Add</button>
+                <input type="text" id="newFileName" placeholder="文件名（如 web_v2.zip）">
+                <button class="btn-primary" onclick="addFile()">添加</button>
             </div>
             
             <div class="file-list" id="fileList">
-                <div class="status-message status-info">Loading file list...</div>
+                <div class="status-message status-info">正在加载文件列表...</div>
             </div>
             
             <div id="uploadStatus" class="status-message"></div>
             
-            <button class="btn-secondary" onclick="logout()" style="margin-top: 20px;">Logout</button>
+            <button class="btn-secondary" onclick="logout()" style="margin-top: 20px;">退出登录</button>
         </div>
     </div>
 
     <div class="editor-modal" id="editorModal">
         <div class="editor-container">
             <div class="editor-header">
-                <div class="editor-title" id="editorTitle">Edit File</div>
+                <div class="editor-title" id="editorTitle">编辑文件</div>
                 <button class="editor-close" onclick="closeEditor()">&times;</button>
             </div>
             <div class="editor-body">
-                <textarea class="editor-textarea" id="editorContent" spellcheck="false" placeholder="File content..."></textarea>
+                <textarea class="editor-textarea" id="editorContent" spellcheck="false" placeholder="文件内容..."></textarea>
             </div>
             <div class="editor-footer">
                 <div class="editor-status" id="editorStatus"></div>
-                <button class="btn-secondary" onclick="closeEditor()">Cancel</button>
-                <button class="btn-primary" onclick="saveFile()">Save</button>
+                <button class="btn-secondary" onclick="closeEditor()">取消</button>
+                <button class="btn-primary" onclick="saveFile()">保存</button>
             </div>
         </div>
     </div>
@@ -464,7 +465,7 @@
                 localStorage.setItem('upload_auth', 'true');
                 loadFiles();
             } else {
-                showStatus('loginStatus', '❌ Wrong password', 'error');
+                showStatus('loginStatus', '❌ 密码错误', 'error');
             }
         }
         
@@ -483,7 +484,7 @@
                 const fileList = document.getElementById('fileList');
                 
                 if (!Array.isArray(files) || files.length === 0) {
-                    fileList.innerHTML = '<div class="status-message status-info">No files configured. Add files above.</div>';
+                    fileList.innerHTML = '<div class="status-message status-info">暂无文件配置，请在上方添加。</div>';
                     return;
                 }
                 
@@ -505,10 +506,10 @@
                     const isLatest = index === 0;
                     html += `
                         <div class="file-item">
-                            <span class="file-name ${isLatest ? 'latest' : ''}">${file.name} ${isLatest ? '(Latest)' : ''}</span>
+                            <span class="file-name ${isLatest ? 'latest' : ''}">${file.name} ${isLatest ? '(最新)' : ''}</span>
                             <div class="file-actions">
-                                <button class="btn-edit" onclick="editFile('${file.name}')">Edit</button>
-                                <button class="btn-danger" onclick="removeFile('${file.name}')">Remove</button>
+                                <button class="btn-edit" onclick="editFile('${file.name}')">编辑</button>
+                                <button class="btn-danger" onclick="removeFile('${file.name}')">删除</button>
                             </div>
                         </div>
                     `;
@@ -516,7 +517,7 @@
                 
                 fileList.innerHTML = html;
             } catch (error) {
-                showStatus('uploadStatus', '❌ Failed to load files: ' + error.message, 'error');
+                showStatus('uploadStatus', '❌ 加载文件失败：' + error.message, 'error');
             }
         }
         
@@ -524,7 +525,7 @@
             const fileName = document.getElementById('newFileName').value.trim();
             
             if (!fileName) {
-                showStatus('uploadStatus', '❌ Please enter file name', 'error');
+                showStatus('uploadStatus', '❌ 请输入文件名', 'error');
                 return;
             }
             
@@ -533,19 +534,19 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    showStatus('uploadStatus', '✅ File added successfully', 'success');
+                    showStatus('uploadStatus', '✅ 文件添加成功', 'success');
                     document.getElementById('newFileName').value = '';
                     loadFiles();
                 } else {
-                    showStatus('uploadStatus', '❌ ' + (result.error || 'Failed to add file'), 'error');
+                    showStatus('uploadStatus', '❌ ' + (result.error || '添加文件失败'), 'error');
                 }
             } catch (error) {
-                showStatus('uploadStatus', '❌ Failed to add file: ' + error.message, 'error');
+                showStatus('uploadStatus', '❌ 添加文件失败：' + error.message, 'error');
             }
         }
         
         async function removeFile(fileName) {
-            if (!confirm(`Are you sure you want to remove "${fileName}"?`)) {
+            if (!confirm(`确定要删除 "${fileName}" 吗？`)) {
                 return;
             }
             
@@ -554,13 +555,13 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    showStatus('uploadStatus', '✅ File removed successfully', 'success');
+                    showStatus('uploadStatus', '✅ 文件删除成功', 'success');
                     loadFiles();
                 } else {
-                    showStatus('uploadStatus', '❌ ' + (result.error || 'Failed to remove file'), 'error');
+                    showStatus('uploadStatus', '❌ ' + (result.error || '删除文件失败'), 'error');
                 }
             } catch (error) {
-                showStatus('uploadStatus', '❌ Failed to remove file: ' + error.message, 'error');
+                showStatus('uploadStatus', '❌ 删除文件失败：' + error.message, 'error');
             }
         }
 
@@ -568,9 +569,9 @@
 
         async function editFile(fileName) {
             currentEditFile = fileName;
-            document.getElementById('editorTitle').textContent = 'Edit: ' + fileName;
+            document.getElementById('editorTitle').textContent = '编辑：' + fileName;
             document.getElementById('editorContent').value = '';
-            document.getElementById('editorStatus').textContent = 'Loading...';
+            document.getElementById('editorStatus').textContent = '加载中...';
             document.getElementById('editorModal').classList.add('active');
 
             try {
@@ -579,12 +580,12 @@
                 
                 if (result.success) {
                     document.getElementById('editorContent').value = result.content || '';
-                    document.getElementById('editorStatus').textContent = 'Ready';
+                    document.getElementById('editorStatus').textContent = '就绪';
                 } else {
-                    document.getElementById('editorStatus').textContent = 'Error: ' + (result.error || 'Failed to load');
+                    document.getElementById('editorStatus').textContent = '❌ ' + (result.error || '加载失败');
                 }
             } catch (error) {
-                document.getElementById('editorStatus').textContent = 'Error: ' + error.message;
+                document.getElementById('editorStatus').textContent = '❌ ' + error.message;
             }
         }
 
@@ -608,14 +609,14 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    document.getElementById('editorStatus').textContent = '✅ Saved!';
+                    document.getElementById('editorStatus').textContent = '✅ 已保存！';
                     setTimeout(() => {
-                        if (document.getElementById('editorStatus').textContent === '✅ Saved!') {
-                            document.getElementById('editorStatus').textContent = 'Ready';
+                        if (document.getElementById('editorStatus').textContent === '✅ 已保存！') {
+                            document.getElementById('editorStatus').textContent = '就绪';
                         }
                     }, 2000);
                 } else {
-                    document.getElementById('editorStatus').textContent = '❌ ' + (result.error || 'Failed to save');
+                    document.getElementById('editorStatus').textContent = '❌ ' + (result.error || '保存失败');
                 }
             } catch (error) {
                 document.getElementById('editorStatus').textContent = '❌ ' + error.message;
