@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Audiowide&display=swap" rel="stylesheet">
-    <title>Weather Forecast</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Audiowide&family=Noto+Sans+SC:wght@400;700;900&display=swap" rel="stylesheet">
+    <title>天气预报</title>
 </head>
 <style>
     body{
         background-color: #0f172a; 
         text-align: center;
-        font-family: 'Orbitron', 'Audiowide', sans-serif;
+        font-family: 'Noto Sans SC', 'Orbitron', 'Audiowide', sans-serif;
         overflow-y: auto;
         overflow-x: hidden;
         padding: 40px 20px;
@@ -397,17 +397,17 @@
 </style>
 <body>
     <canvas id="rainCanvas"></canvas>
-    <a href="/" class="back-home">← Back Home</a>
+    <a href="/" class="back-home">← 返回首页</a>
 
-    <h1>🌤️ Weather Forecast 🌤️</h1>
-    <h2>Enter city to check weather</h2>
+    <h1>🌤️ 天气预报 🌤️</h1>
+    <h2>输入城市查看天气</h2>
 
     <div class="search-box">
-        <input type="text" class="search-input" id="cityInput" placeholder="Enter city name..." onkeydown="if(event.key==='Enter')searchWeather()">
-        <button class="glow-button" id="searchBtn" onclick="searchWeather()">Search</button>
+        <input type="text" class="search-input" id="cityInput" placeholder="输入城市名称..." onkeydown="if(event.key==='Enter')searchWeather()">
+        <button class="glow-button" id="searchBtn" onclick="searchWeather()">搜索</button>
     </div>
 
-    <div class="loading" id="loading">Loading weather data...</div>
+    <div class="loading" id="loading">正在加载天气数据...</div>
     <div class="error-msg" id="errorMsg"></div>
 
     <div class="weather-card" id="weatherCard">
@@ -421,25 +421,25 @@
 
         <div class="weather-details">
             <div class="detail-item">
-                <div class="detail-label">Feels Like</div>
+                <div class="detail-label">体感温度</div>
                 <div class="detail-value" id="feelsLike">--</div>
             </div>
             <div class="detail-item">
-                <div class="detail-label">Humidity</div>
+                <div class="detail-label">湿度</div>
                 <div class="detail-value" id="humidity">--</div>
             </div>
             <div class="detail-item">
-                <div class="detail-label">Wind</div>
+                <div class="detail-label">风力</div>
                 <div class="detail-value" id="wind">--</div>
             </div>
             <div class="detail-item">
-                <div class="detail-label">Visibility</div>
+                <div class="detail-label">能见度</div>
                 <div class="detail-value" id="visibility">--</div>
             </div>
         </div>
 
         <div class="forecast-section">
-            <div class="forecast-title">📅 3-Day Forecast</div>
+            <div class="forecast-title">📅 未来三天预报</div>
             <div class="forecast-list" id="forecastList"></div>
         </div>
     </div>
@@ -563,7 +563,7 @@
     async function searchWeather(){
         const city = document.getElementById('cityInput').value.trim();
         if(!city){
-            showError('Please enter a city name');
+            showError('请输入城市名称');
             return;
         }
 
@@ -575,7 +575,7 @@
             });
 
             if(!res.ok){
-                throw new Error('Server error');
+                throw new Error('服务器错误');
             }
 
             const data = await res.json();
@@ -586,7 +586,7 @@
 
             renderWeather(data);
         } catch(e){
-            showError(e.message || 'Failed to fetch weather data');
+            showError(e.message || '获取天气数据失败');
         } finally {
             hideLoading();
         }
