@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Audiowide&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Audiowide&family=Noto+Sans+SC:wght@400;700;900&display=swap" rel="stylesheet">
 </head>
 <style>
     body{
         background-color: #0f172a; 
         text-align: center;
-        font-family: 'Orbitron', 'Audiowide', sans-serif;
+        font-family: 'Noto Sans SC', 'Orbitron', 'Audiowide', sans-serif;
         overflow-y: auto;
         overflow-x: hidden;
     }
@@ -414,16 +414,16 @@
     }
 </style>
 <div class="navbar">
-    <div class="navbar-title">AP STUDIO</div>
+    <div class="navbar-title">AP 主页</div>
     <div class="navbar-right">
-        <a href="weather/" class="download-button">🌤️ Weather</a>
-        <button class="download-button" onclick="downloadLatest()">📥 Download</button>
+        <a href="weather/" class="download-button">🌤️ 天气</a>
+        <button class="download-button" onclick="downloadLatest()">📥 下载</button>
         <div class="navbar-time" id="navbarTime"></div>
     </div>
 </div>
 <div class="main-content">
-<h1>😊Welcome😊</h1>
-<h2>🤔What's Inside?🤔</h2> 
+<h1>😊欢迎😊</h1>
+<h2>😱很多内容😱</h2> 
 <canvas id="rainCanvas"></canvas>
 <div class="avatar-wrapper">
     <div class="typewriter-text" id="typewriter"></div>
@@ -434,11 +434,11 @@
 
 <a href="https://www.github.com">
     <h1>
-        🎯 Explore Github 🎯
+        🎯 探索 Github 🎯
     </h1>
 </a>
 
-<button class="glow-button" onclick="openModal()">Clear Alerts</button>
+<button class="glow-button" onclick="openModal()">清除警告</button>
 
 <div class="visitor-count">
     你是第 <span class="count-number" id="visitorCount">--</span> 位访客
@@ -449,16 +449,16 @@
 <div id="infoModal" class="modal-overlay" onclick="closeModalOutside(event)">
     <div class="modal-content">
         <button class="modal-close" onclick="closeModal()">&times;</button>
-        <h2>Welcome!</h2>
-        <p>This is a cool interactive page with:</p>
+        <h2>欢迎！</h2>
+        <p>这是一个酷炫的交互页面，包含：</p>
         <ul>
-            <li>Cyberpunk rain effect</li>
-            <li>Typewriter animation</li>
-            <li>Interactive avatar</li>
-            <li>Glowing buttons</li>
+            <li>赛博朋克下雨效果</li>
+            <li>打字机动画</li>
+            <li>互动头像</li>
+            <li>发光按钮</li>
         </ul>
-        <p>Click the avatar to trigger the alert!</p>
-        <button class="glow-button" onclick="clearAllAlerts(); closeModal();">Clear All Alerts</button>
+        <p>点击头像触发警告特效！</p>
+        <button class="glow-button" onclick="clearAllAlerts(); closeModal();">清除所有警告</button>
     </div>
 </div>
 
@@ -540,7 +540,7 @@
 
     // ========== 打字机效果 ==========
     const typewriterEl = document.getElementById('typewriter');
-    const texts = ['Welcome!', 'Amazing!'];
+    const texts = ['欢迎！', '太棒了！'];
     let textIndex = 0;
     let charIndex = 0;
     let isDeleting = false;
