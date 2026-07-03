@@ -59,8 +59,8 @@ export async function onRequest(context) {
         const location = geoData.location[0];
         const locationId = location.id;
 
-        const weatherUrl = `https://${API_HOST}/weather/v7/now?location=${locationId}&key=${API_KEY}`;
-        const forecastUrl = `https://${API_HOST}/weather/v7/3d?location=${locationId}&key=${API_KEY}`;
+        const weatherUrl = `https://${API_HOST}/v7/weather/now?location=${locationId}&key=${API_KEY}`;
+        const forecastUrl = `https://${API_HOST}/v7/weather/3d?location=${locationId}&key=${API_KEY}`;
         
         const [weatherRes, forecastRes] = await Promise.all([
             fetch(weatherUrl),
