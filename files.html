@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Audiowide&family=Noto+Sans+SC:wght@400;700;900&display=swap" rel="stylesheet">
+    <title>文件搜索 - AP 工作室</title>
+</head>
+<style>
+    body{
+        background-color: #0f172a; 
+        text-align: center;
+        font-family: 'Noto Sans SC', 'Orbitron', 'Audiowide', sans-serif;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 40px 20px;
+        box-sizing: border-box;
+        min-height: 100vh;
+    }
+
+    ::-webkit-scrollbar{
+        width: 10px;
+    }
+    ::-webkit-scrollbar-track{
+        background: #1e293b;
+    }
+    ::-webkit-scrollbar-thumb{
+        background: linear-gradient(180deg, #87CEEB, #ADD8E6);
+        border-radius: 5px;
+    }
+    ::-webkit-scrollbar-thumb:hover{
+        background: linear-gradient(180deg, #ADD8E6, #87CEEB);
+    }
+
+    h1{
+        color: rgb(76, 169, 250);
+        text-shadow: 0 0 20px rgb(76, 169, 250);
+        margin-bottom: 10px;
+        font-size: 36px;
+    }
+    h2{
+        color: rgb(224, 207, 16);
+        text-shadow: 0 0 20px rgb(224, 207, 16);
+    }
+
+    #rainCanvas{
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+        pointer-events: none;
+    }
+
+    .back-home{
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        color: rgba(135, 206, 235, 0.8);
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: bold;
+        padding: 8px 16px;
+        border: 1px solid rgba(135, 206, 235, 0.3);
+        border-radius: 20px;
+        background: rgba(15, 23, 42, 0.8);
+        transition: all 0.3s;
+        z-index: 100;
+    }
+    .back-home:hover{
+        color: #fff;
+        background: rgba(135, 206, 235, 0.2);
+        box-shadow: 0 0 15px rgba(135, 206, 235, 0.4);
+    }
+
+    .search-box{
+        display: flex;
+        gap: 10px;
+        max-width: 500px;
+        margin: 30px auto;
+    }
+    .search-input{
+        flex: 1;
+        padding: 12px 20px;
+        border: 2px solid rgba(135, 206, 235, 0.3);
+        border-radius: 50px;
+        background: rgba(15, 23, 42, 0.8);
+        color: #fff;
+        font-size: 16px;
+        outline: none;
+        font-family: inherit;
+        transition: all 0.3s;
+    }
+    .search-input:focus{
+        border-color: #4ca9fa;
+        box-shadow: 0 0 20px rgba(76, 169, 250, 0.3);
+    }
+    .search-input::placeholder{
+        color: #64748b;
+    }
+
+    .glow-button{
+        padding: 12px 30px;
+        font-size: 16px;
+        font-weight: bold;
+        font-family: inherit;
+        background: linear-gradient(135deg, #87CEEB, #ADD8E6);
+        color: #0f172a;
+        border: none;
+        border-radius: 50px;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 
+            0 0 20px rgba(135, 206, 235, 0.6),
+            0 0 40px rgba(135, 206, 235, 0.4),
+            0 0 60px rgba(135, 206, 235, 0.2);
+        animation: pulseGlow 2s ease-in-out infinite;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        white-space: nowrap;
+    }
+    .glow-button:hover{
+        transform: scale(1.05);
+        box-shadow: 
+            0 0 30px rgba(135, 206, 235, 0.8),
+            0 0 60px rgba(135, 206, 235, 0.6),
+            0 0 90px rgba(135, 206, 235, 0.4);
+    }
+    .glow-button:active{
+        transform: scale(0.95);
+    }
+    @keyframes pulseGlow{
+        0%, 100%{
+            box-shadow: 
+                0 0 20px rgba(135, 206, 235, 0.6),
+                0 0 40px rgba(135, 206, 235, 0.4),
+                0 0 60px rgba(135, 206, 235, 0.2);
+        }
+        50%{
+            box-shadow: 
+                0 0 30px rgba(135, 206, 235, 0.8),
+                0 0 50px rgba(135, 206, 235, 0.6),
+                0 0 80px rgba(135, 206, 235, 0.4);
+        }
+    }
+
+    .file-list{
+        max-width: 600px;
+        margin: 30px auto;
+    }
+
+    .file-item{
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 20px;
+        background: rgba(30, 41, 59, 0.8);
+        border: 1px solid rgba(135, 206, 235, 0.2);
+        border-radius: 12px;
+        margin-bottom: 10px;
+        backdrop-filter: blur(5px);
+        transition: all 0.3s;
+        cursor: pointer;
+        text-align: left;
+    }
+    .file-item:hover{
+        background: rgba(76, 169, 250, 0.1);
+        border-color: rgba(135, 206, 235, 0.5);
+        transform: translateX(5px);
+        box-shadow: 0 0 20px rgba(76, 169, 250, 0.2);
+    }
+
+    .file-info{
+        flex: 1;
+    }
+    .file-name{
+        color: #fff;
+        font-size: 16px;
+        font-weight: bold;
+        margin-bottom: 4px;
+    }
+    .file-name.latest{
+        color: #4ca9fa;
+        text-shadow: 0 0 10px rgba(76, 169, 250, 0.5);
+    }
+    .file-badge{
+        display: inline-block;
+        padding: 2px 8px;
+        background: rgba(76, 169, 250, 0.2);
+        color: #4ca9fa;
+        font-size: 11px;
+        border-radius: 10px;
+        margin-left: 8px;
+        font-weight: normal;
+    }
+    .file-type{
+        color: #94a3b8;
+        font-size: 13px;
+    }
+
+    .file-actions{
+        display: flex;
+        gap: 8px;
+    }
+    .action-btn{
+        padding: 6px 14px;
+        font-size: 13px;
+        border-radius: 20px;
+        border: none;
+        cursor: pointer;
+        font-family: inherit;
+        font-weight: bold;
+        transition: all 0.3s;
+    }
+    .btn-view{
+        background: rgba(135, 206, 235, 0.2);
+        color: #87CEEB;
+        border: 1px solid rgba(135, 206, 235, 0.3);
+    }
+    .btn-view:hover{
+        background: rgba(135, 206, 235, 0.3);
+    }
+    .btn-download{
+        background: linear-gradient(135deg, #87CEEB, #ADD8E6);
+        color: #0f172a;
+    }
+    .btn-download:hover{
+        transform: scale(1.05);
+        box-shadow: 0 0 15px rgba(135, 206, 235, 0.6);
+    }
+
+    .loading{
+        color: #94a3b8;
+        text-align: center;
+        padding: 40px;
+        font-size: 16px;
+    }
+
+    .empty-state{
+        text-align: center;
+        padding: 60px 20px;
+        color: #64748b;
+    }
+    .empty-icon{
+        font-size: 64px;
+        margin-bottom: 20px;
+        opacity: 0.5;
+    }
+    .empty-text{
+        font-size: 18px;
+        margin-bottom: 10px;
+    }
+    .empty-hint{
+        font-size: 14px;
+    }
+
+    .modal-overlay{
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(5px);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+        box-sizing: border-box;
+        animation: fadeIn 0.3s ease;
+    }
+    .modal-overlay.active{
+        display: flex;
+    }
+    .modal-content{
+        background: rgba(15, 23, 42, 0.95);
+        border: 1px solid rgba(135, 206, 235, 0.3);
+        border-radius: 15px;
+        width: 100%;
+        max-width: 700px;
+        max-height: 80vh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 0 60px rgba(76, 169, 250, 0.2);
+        animation: slideUp 0.3s ease;
+    }
+    .modal-header{
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 20px;
+        border-bottom: 1px solid rgba(135, 206, 235, 0.2);
+    }
+    .modal-title{
+        color: #fff;
+        font-size: 18px;
+        font-weight: bold;
+    }
+    .modal-close{
+        background: none;
+        border: none;
+        color: #94a3b8;
+        font-size: 28px;
+        cursor: pointer;
+        width: 30px;
+        height: 30px;
+        padding: 0;
+        line-height: 1;
+        transition: all 0.3s;
+    }
+    .modal-close:hover{
+        color: #87CEEB;
+        transform: rotate(90deg);
+    }
+    .modal-body{
+        padding: 20px;
+        overflow-y: auto;
+        flex: 1;
+    }
+    .file-content{
+        background: rgba(15, 23, 42, 0.8);
+        border: 1px solid rgba(135, 206, 235, 0.2);
+        border-radius: 8px;
+        padding: 15px;
+        font-family: 'Courier New', monospace;
+        font-size: 14px;
+        color: #cbd5e1;
+        white-space: pre-wrap;
+        word-break: break-all;
+        line-height: 1.6;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    .file-detail{
+        margin-bottom: 15px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid rgba(135, 206, 235, 0.1);
+    }
+    .detail-row{
+        display: flex;
+        justify-content: space-between;
+        padding: 6px 0;
+        color: #94a3b8;
+        font-size: 14px;
+    }
+    .detail-label{
+        color: #64748b;
+    }
+    .detail-value{
+        color: #cbd5e1;
+    }
+    @keyframes fadeIn{
+        from{ opacity: 0; }
+        to{ opacity: 1; }
+    }
+    @keyframes slideUp{
+        from{
+            opacity: 0;
+            transform: translateY(30px) scale(0.95);
+        }
+        to{
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    @media (max-width: 600px){
+        h1{
+            font-size: 24px;
+        }
+        .search-box{
+            flex-direction: column;
+        }
+        .glow-button{
+            width: 100%;
+        }
+        .file-item{
+            flex-direction: column;
+            gap: 10px;
+            align-items: flex-start;
+        }
+        .file-actions{
+            width: 100%;
+        }
+    }
+</style>
+
+<body>
+    <canvas id="rainCanvas"></canvas>
+    <a href="/" class="back-home">← 返回首页</a>
+
+    <h1>📁 文件资源</h1>
+    <h2>搜索查看文件信息</h2>
+
+    <div class="search-box">
+        <input type="text" class="search-input" id="searchInput" placeholder="输入文件名搜索..." oninput="filterFiles()" onkeydown="if(event.key==='Enter')searchFiles()">
+        <button class="glow-button" onclick="searchFiles()">搜索</button>
+    </div>
+
+    <div class="file-list" id="fileList">
+        <div class="loading">正在加载文件列表...</div>
+    </div>
+
+    <div class="modal-overlay" id="detailModal" onclick="closeModalOutside(event)">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="modalTitle">文件详情</div>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+            </div>
+        </div>
+    </div>
+
+<script>
+    const canvas = document.getElementById('rainCanvas');
+    const ctx = canvas.getContext('2d');
+    let drops = [];
+
+    function resizeCanvas(){
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+
+    function createRaindrops(){
+        drops = [];
+        for(let i = 0; i < 120; i++){
+            drops.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height * -1,
+                length: Math.random() * 25 + 20,
+                speed: Math.random() * 150 + 100,
+                opacity: Math.random() * 0.4 + 0.3
+            });
+        }
+    }
+
+    function updateRain(deltaTime){
+        const deltaSeconds = deltaTime / 1000;
+        for(const drop of drops){
+            drop.y += drop.speed * deltaSeconds;
+            if(drop.y > canvas.height + 20){
+                drop.y = -drop.length;
+                drop.x = Math.random() * canvas.width;
+            }
+        }
+    }
+
+    function drawRain(){
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for(const drop of drops){
+            ctx.beginPath();
+            ctx.moveTo(drop.x, drop.y);
+            ctx.lineTo(drop.x, drop.y + drop.length);
+            ctx.strokeStyle = `rgba(174, 194, 224, ${drop.opacity})`;
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+        }
+    }
+
+    let lastTime = 0;
+    function animateRain(currentTime){
+        if(!lastTime) lastTime = currentTime;
+        const deltaTime = currentTime - lastTime;
+        lastTime = currentTime;
+        updateRain(deltaTime);
+        drawRain();
+        requestAnimationFrame(animateRain);
+    }
+
+    window.addEventListener('resize', () => {
+        resizeCanvas();
+        createRaindrops();
+    });
+
+    resizeCanvas();
+    createRaindrops();
+    requestAnimationFrame(animateRain);
+
+    let allFiles = [];
+
+    async function loadFiles(){
+        try {
+            const res = await fetch('/api/manage-files?action=get', { cache: 'no-store' });
+            const data = await res.json();
+            allFiles = Array.isArray(data) ? data : [];
+            renderFiles(allFiles);
+        } catch(e){
+            document.getElementById('fileList').innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">⚠️</div>
+                    <div class="empty-text">加载失败</div>
+                    <div class="empty-hint">请稍后再试</div>
+                </div>
+            `;
+        }
+    }
+
+    function filterFiles(){
+        const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
+        if(!keyword){
+            renderFiles(allFiles);
+            return;
+        }
+        const filtered = allFiles.filter(f => f.name.toLowerCase().includes(keyword));
+        renderFiles(filtered);
+    }
+
+    function searchFiles(){
+        filterFiles();
+    }
+
+    function renderFiles(files){
+        const listEl = document.getElementById('fileList');
+        
+        if(files.length === 0){
+            const keyword = document.getElementById('searchInput').value.trim();
+            listEl.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">📭</div>
+                    <div class="empty-text">${keyword ? '没有找到匹配的文件' : '暂无文件'}</div>
+                    <div class="empty-hint">${keyword ? '试试其他关键词' : '文件列表为空'}</div>
+                </div>
+            `;
+            return;
+        }
+
+        const sorted = [...files].sort((a, b) => getVersion(b.name) - getVersion(a.name));
+        
+        let html = '';
+        sorted.forEach((file, index) => {
+            const isLatest = index === 0;
+            const ext = getFileExt(file.name);
+            html += `
+                <div class="file-item" onclick="viewFile('${escapeHtml(file.name)}')">
+                    <div class="file-info">
+                        <div class="file-name ${isLatest ? 'latest' : ''}">
+                            ${escapeHtml(file.name)}
+                            ${isLatest ? '<span class="file-badge">最新</span>' : ''}
+                        </div>
+                        <div class="file-type">${ext.toUpperCase()} 文件</div>
+                    </div>
+                    <div class="file-actions" onclick="event.stopPropagation()">
+                        <button class="action-btn btn-view" onclick="viewFile('${escapeHtml(file.name)}')">查看</button>
+                        <button class="action-btn btn-download" onclick="downloadFile('${escapeHtml(file.name)}')">下载</button>
+                    </div>
+                </div>
+            `;
+        });
+        listEl.innerHTML = html;
+    }
+
+    function getVersion(name){
+        const dateTimeMatch = name.match(/(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})/);
+        if(dateTimeMatch) return parseInt(dateTimeMatch[1] + dateTimeMatch[2] + dateTimeMatch[3] + dateTimeMatch[4] + dateTimeMatch[5]);
+        const dateMatch = name.match(/(\d{4})(\d{2})(\d{2})/);
+        if(dateMatch) return parseInt(dateMatch[1] + dateMatch[2] + dateMatch[3]);
+        const versionMatch = name.match(/v(\d+)/);
+        if(versionMatch) return parseInt(versionMatch[1]) * 100000000;
+        return 0;
+    }
+
+    function getFileExt(name){
+        const dotIndex = name.lastIndexOf('.');
+        if(dotIndex > -1) return name.substring(dotIndex + 1);
+        return 'unknown';
+    }
+
+    function escapeHtml(str){
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    async function viewFile(fileName){
+        const modal = document.getElementById('detailModal');
+        const titleEl = document.getElementById('modalTitle');
+        const bodyEl = document.getElementById('modalBody');
+        
+        titleEl.textContent = fileName;
+        bodyEl.innerHTML = '<div class="loading">加载中...</div>';
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+
+        try {
+            const res = await fetch(`/api/manage-files?action=get_content&name=${encodeURIComponent(fileName)}`, { cache: 'no-store' });
+            const result = await res.json();
+            
+            const ext = getFileExt(fileName).toLowerCase();
+            const isText = ['txt', 'md', 'json', 'js', 'html', 'css', 'py', 'java', 'xml', 'yml', 'yaml', 'conf', 'log'].includes(ext);
+            const hasContent = result.success && result.content && result.content.length > 0;
+
+            let contentHtml = '';
+            if(hasContent && isText){
+                contentHtml = `
+                    <div class="file-detail">
+                        <div class="detail-row">
+                            <span class="detail-label">文件名</span>
+                            <span class="detail-value">${escapeHtml(fileName)}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">类型</span>
+                            <span class="detail-value">${ext.toUpperCase()} 文件</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">大小</span>
+                            <span class="detail-value">${result.content.length} 字符</span>
+                        </div>
+                    </div>
+                    <div class="file-content">${escapeHtml(result.content)}</div>
+                `;
+            } else {
+                contentHtml = `
+                    <div class="file-detail">
+                        <div class="detail-row">
+                            <span class="detail-label">文件名</span>
+                            <span class="detail-value">${escapeHtml(fileName)}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">类型</span>
+                            <span class="detail-value">${ext.toUpperCase()} 文件</span>
+                        </div>
+                    </div>
+                    <div style="text-align:center; padding: 30px; color: #64748b;">
+                        <div style="font-size: 48px; margin-bottom: 15px;">📦</div>
+                        <p>这是一个二进制文件，无法在线预览</p>
+                        <p style="font-size: 13px; margin-top: 10px;">点击下方按钮下载查看</p>
+                    </div>
+                    <div style="text-align: center; margin-top: 20px;">
+                        <button class="glow-button" onclick="downloadFile('${escapeHtml(fileName)}'); closeModal();">下载文件</button>
+                    </div>
+                `;
+            }
+            bodyEl.innerHTML = contentHtml;
+        } catch(e){
+            bodyEl.innerHTML = `
+                <div style="text-align:center; padding: 40px; color: #ef4444;">
+                    <div style="font-size: 48px; margin-bottom: 15px;">❌</div>
+                    <p>加载失败：${escapeHtml(e.message)}</p>
+                </div>
+            `;
+        }
+    }
+
+    function downloadFile(fileName){
+        const url = `/files/${encodeURIComponent(fileName)}`;
+        window.open(url, '_blank');
+    }
+
+    function closeModal(){
+        document.getElementById('detailModal').classList.remove('active');
+        document.body.style.overflow = 'auto';
+    }
+
+    function closeModalOutside(event){
+        if(event.target.id === 'detailModal'){
+            closeModal();
+        }
+    }
+
+    document.addEventListener('keydown', function(event){
+        if(event.key === 'Escape'){
+            closeModal();
+        }
+    });
+
+    loadFiles();
+</script>
+</body>
+</html>
