@@ -1,7 +1,7 @@
 export async function onRequest(context) {
     const { env } = context;
     
-    const GITHUB_USER = 'we123df';
+    const GITHUB_USER = 'we123tdt';
     const GITHUB_REPO = 'web-download-files';
     const CDN_BASE_URL = `https://cdn.jsdelivr.net/gh/${GITHUB_USER}/${GITHUB_REPO}`;
     
