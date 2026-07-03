@@ -249,8 +249,135 @@
             flex: 1;
         }
         
-        .action-row button {
-            flex: 0 0 100px;
+        .btn-edit {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            padding: 6px 12px;
+            width: auto;
+            font-size: 12px;
+            margin-right: 6px;
+        }
+        
+        .btn-edit:hover {
+            background: rgba(34, 197, 94, 0.3);
+        }
+        
+        .file-actions {
+            display: flex;
+            align-items: center;
+        }
+        
+        .editor-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .editor-modal.active {
+            display: flex;
+        }
+        
+        .editor-container {
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid rgba(135, 206, 235, 0.3);
+            border-radius: 15px;
+            width: 100%;
+            max-width: 900px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 60px rgba(76, 169, 250, 0.2);
+        }
+        
+        .editor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            border-bottom: 1px solid rgba(135, 206, 235, 0.2);
+        }
+        
+        .editor-title {
+            color: #fff;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .editor-close {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 28px;
+            cursor: pointer;
+            width: 30px;
+            height: 30px;
+            padding: 0;
+            line-height: 1;
+            transition: all 0.3s;
+        }
+        
+        .editor-close:hover {
+            color: #ef4444;
+            transform: rotate(90deg);
+        }
+        
+        .editor-body {
+            flex: 1;
+            overflow: auto;
+            padding: 15px;
+        }
+        
+        .editor-textarea {
+            width: 100%;
+            height: 400px;
+            background: rgba(15, 23, 42, 1);
+            border: 1px solid rgba(135, 206, 235, 0.2);
+            border-radius: 8px;
+            color: #e2e8f0;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            padding: 15px;
+            resize: none;
+            outline: none;
+            line-height: 1.6;
+            tab-size: 4;
+        }
+        
+        .editor-textarea:focus {
+            border-color: rgba(76, 169, 250, 0.5);
+            box-shadow: 0 0 15px rgba(76, 169, 250, 0.1);
+        }
+        
+        .editor-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding: 15px 20px;
+            border-top: 1px solid rgba(135, 206, 235, 0.2);
+        }
+        
+        .editor-footer button {
+            width: auto;
+            padding: 10px 25px;
+            font-size: 14px;
+        }
+        
+        .editor-status {
+            margin-right: auto;
+            color: #64748b;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
         }
     </style>
 </head>
@@ -286,9 +413,26 @@
             <button class="btn-secondary" onclick="logout()" style="margin-top: 20px;">Logout</button>
         </div>
     </div>
+
+    <div class="editor-modal" id="editorModal">
+        <div class="editor-container">
+            <div class="editor-header">
+                <div class="editor-title" id="editorTitle">Edit File</div>
+                <button class="editor-close" onclick="closeEditor()">&times;</button>
+            </div>
+            <div class="editor-body">
+                <textarea class="editor-textarea" id="editorContent" spellcheck="false" placeholder="File content..."></textarea>
+            </div>
+            <div class="editor-footer">
+                <div class="editor-status" id="editorStatus"></div>
+                <button class="btn-secondary" onclick="closeEditor()">Cancel</button>
+                <button class="btn-primary" onclick="saveFile()">Save</button>
+            </div>
+        </div>
+    </div>
     
     <script>
-        const PASSWORD = 'password123';
+        const PASSWORD = '170254';
         
         function showStatus(elementId, message, type) {
             const element = document.getElementById(elementId);
@@ -350,7 +494,10 @@
                     html += `
                         <div class="file-item">
                             <span class="file-name ${isLatest ? 'latest' : ''}">${file.name} ${isLatest ? '(Latest)' : ''}</span>
-                            <button class="btn-danger" onclick="removeFile('${file.name}')">Remove</button>
+                            <div class="file-actions">
+                                <button class="btn-edit" onclick="editFile('${file.name}')">Edit</button>
+                                <button class="btn-danger" onclick="removeFile('${file.name}')">Remove</button>
+                            </div>
                         </div>
                     `;
                 });
@@ -404,6 +551,80 @@
                 showStatus('uploadStatus', '❌ Failed to remove file: ' + error.message, 'error');
             }
         }
+
+        let currentEditFile = '';
+
+        async function editFile(fileName) {
+            currentEditFile = fileName;
+            document.getElementById('editorTitle').textContent = 'Edit: ' + fileName;
+            document.getElementById('editorContent').value = '';
+            document.getElementById('editorStatus').textContent = 'Loading...';
+            document.getElementById('editorModal').classList.add('active');
+
+            try {
+                const response = await fetch(`/api/manage-files?action=get_content&name=${encodeURIComponent(fileName)}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    document.getElementById('editorContent').value = result.content || '';
+                    document.getElementById('editorStatus').textContent = 'Ready';
+                } else {
+                    document.getElementById('editorStatus').textContent = 'Error: ' + (result.error || 'Failed to load');
+                }
+            } catch (error) {
+                document.getElementById('editorStatus').textContent = 'Error: ' + error.message;
+            }
+        }
+
+        function closeEditor() {
+            document.getElementById('editorModal').classList.remove('active');
+            currentEditFile = '';
+        }
+
+        async function saveFile() {
+            if (!currentEditFile) return;
+
+            const content = document.getElementById('editorContent').value;
+            document.getElementById('editorStatus').textContent = 'Saving...';
+
+            try {
+                const response = await fetch('/api/manage-files?action=set_content', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: currentEditFile, content: content })
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    document.getElementById('editorStatus').textContent = '✅ Saved!';
+                    setTimeout(() => {
+                        if (document.getElementById('editorStatus').textContent === '✅ Saved!') {
+                            document.getElementById('editorStatus').textContent = 'Ready';
+                        }
+                    }, 2000);
+                } else {
+                    document.getElementById('editorStatus').textContent = '❌ ' + (result.error || 'Failed to save');
+                }
+            } catch (error) {
+                document.getElementById('editorStatus').textContent = '❌ ' + error.message;
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && document.getElementById('editorModal').classList.contains('active')) {
+                closeEditor();
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key === 's' && document.getElementById('editorModal').classList.contains('active')) {
+                e.preventDefault();
+                saveFile();
+            }
+        });
+
+        document.getElementById('editorModal').addEventListener('click', (e) => {
+            if (e.target.id === 'editorModal') {
+                closeEditor();
+            }
+        });
         
         document.getElementById('password').addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {

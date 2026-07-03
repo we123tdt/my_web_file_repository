@@ -54,8 +54,56 @@ export async function onRequest(context) {
         
         const filtered = files.filter(f => f.name !== fileName);
         await env.VISITOR_KV.put('download_files', JSON.stringify(filtered));
+        await env.VISITOR_KV.delete(`file_content:${fileName}`);
         
         return new Response(JSON.stringify({ success: true, files: filtered }), {
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+
+    if (action === 'get_content') {
+        const fileName = url.searchParams.get('name');
+        if (!fileName) {
+            return new Response(JSON.stringify({ error: 'File name required' }), {
+                status: 400,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+
+        const content = await env.VISITOR_KV.get(`file_content:${fileName}`);
+        return new Response(JSON.stringify({ success: true, content: content || '' }), {
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+
+    if (action === 'set_content') {
+        if (request.method !== 'POST') {
+            return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+                status: 405,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+
+        const body = await request.json();
+        const fileName = body.name;
+        const content = body.content;
+
+        if (!fileName) {
+            return new Response(JSON.stringify({ error: 'File name required' }), {
+                status: 400,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+
+        if (content === undefined) {
+            return new Response(JSON.stringify({ error: 'Content required' }), {
+                status: 400,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+
+        await env.VISITOR_KV.put(`file_content:${fileName}`, content);
+        return new Response(JSON.stringify({ success: true }), {
             headers: { 'Content-Type': 'application/json' }
         });
     }
