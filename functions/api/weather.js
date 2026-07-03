@@ -12,21 +12,36 @@ export async function onRequest(context) {
         });
     }
 
-    if (!API_KEY || API_KEY === '你的和风天气API_KEY') {
-        return new Response(JSON.stringify({ error: 'Weather API key not configured' }), {
+    if (!API_KEY) {
+        return new Response(JSON.stringify({ error: 'Weather API key not configured. Please set QWEATHER_KEY in environment variables.' }), {
             status: 500,
             headers: { 'Content-Type': 'application/json' }
         });
     }
 
     try {
-        const geoRes = await fetch(
-            `https://geoapi.qweather.com/v2/city/lookup?location=${encodeURIComponent(city)}&key=${API_KEY}`
-        );
-        const geoData = await geoRes.json();
+        const geoUrl = `https://geoapi.qweather.com/v2/city/lookup?location=${encodeURIComponent(city)}&key=${API_KEY}`;
+        const geoRes = await fetch(geoUrl);
+        
+        if (!geoRes.ok) {
+            return new Response(JSON.stringify({ error: `Geo API request failed: ${geoRes.status}` }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+        
+        const geoText = await geoRes.text();
+        if (!geoText) {
+            return new Response(JSON.stringify({ error: 'Geo API returned empty response. Check your API key.' }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+        
+        const geoData = JSON.parse(geoText);
 
         if (geoData.code !== '200' || !geoData.location || geoData.location.length === 0) {
-            return new Response(JSON.stringify({ error: 'City not found' }), {
+            return new Response(JSON.stringify({ error: `City not found. API code: ${geoData.code}. Message: ${geoData.message || 'No message'}` }), {
                 status: 404,
                 headers: { 'Content-Type': 'application/json' }
             });
@@ -35,16 +50,36 @@ export async function onRequest(context) {
         const location = geoData.location[0];
         const locationId = location.id;
 
+        const weatherUrl = `https://devapi.qweather.com/v7/weather/now?location=${locationId}&key=${API_KEY}`;
+        const forecastUrl = `https://devapi.qweather.com/v7/weather/3d?location=${locationId}&key=${API_KEY}`;
+        
         const [weatherRes, forecastRes] = await Promise.all([
-            fetch(`https://devapi.qweather.com/v7/weather/now?location=${locationId}&key=${API_KEY}`),
-            fetch(`https://devapi.qweather.com/v7/weather/3d?location=${locationId}&key=${API_KEY}`)
+            fetch(weatherUrl),
+            fetch(forecastUrl)
         ]);
 
-        const weatherData = await weatherRes.json();
-        const forecastData = await forecastRes.json();
+        if (!weatherRes.ok) {
+            return new Response(JSON.stringify({ error: `Weather API request failed: ${weatherRes.status}` }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+
+        const weatherText = await weatherRes.text();
+        if (!weatherText) {
+            return new Response(JSON.stringify({ error: 'Weather API returned empty response' }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+        
+        const weatherData = JSON.parse(weatherText);
+        
+        const forecastText = await forecastRes.text();
+        const forecastData = forecastText ? JSON.parse(forecastText) : { daily: [] };
 
         if (weatherData.code !== '200') {
-            return new Response(JSON.stringify({ error: 'Weather API error' }), {
+            return new Response(JSON.stringify({ error: `Weather API error. Code: ${weatherData.code}. Check if your API key is valid.` }), {
                 status: 500,
                 headers: { 'Content-Type': 'application/json' }
             });
