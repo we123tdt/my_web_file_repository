@@ -1,6 +1,10 @@
 export async function onRequest(context) {
     const { env } = context;
     
+    const GITHUB_USER = 'we123df';
+    const GITHUB_REPO = 'web-download-files';
+    const CDN_BASE_URL = `https://cdn.jsdelivr.net/gh/${GITHUB_USER}/${GITHUB_REPO}`;
+    
     try {
         let files = [];
         
@@ -32,7 +36,7 @@ export async function onRequest(context) {
             return new Response(JSON.stringify({ 
                 success: false, 
                 error: 'No files configured',
-                fallbackUrl: '/files/web.zip'
+                fallbackUrl: `${CDN_BASE_URL}/web.zip`
             }), {
                 status: 404,
                 headers: { 'Content-Type': 'application/json' }
@@ -56,12 +60,21 @@ export async function onRequest(context) {
         const latest = files[0];
         const latestName = typeof latest === 'string' ? latest : (latest.name || '');
         
+        const filesWithUrls = files.map(file => {
+            const name = typeof file === 'string' ? file : (file.name || '');
+            const url = (typeof file === 'object' && file.url) ? file.url : `${CDN_BASE_URL}/${encodeURIComponent(name)}`;
+            return {
+                name: name,
+                url: url
+            };
+        });
+        
         return new Response(JSON.stringify({
             success: true,
-            files: files,
+            files: filesWithUrls,
             latest: {
                 name: latestName,
-                url: `/files/${latestName}`
+                url: (typeof latest === 'object' && latest.url) ? latest.url : `${CDN_BASE_URL}/${encodeURIComponent(latestName)}`
             }
         }), {
             headers: { 'Content-Type': 'application/json' }
@@ -70,7 +83,7 @@ export async function onRequest(context) {
         return new Response(JSON.stringify({ 
             success: false,
             error: error.message,
-            fallbackUrl: '/files/web.zip'
+            fallbackUrl: `${CDN_BASE_URL}/web.zip`
         }), {
             status: 500,
             headers: { 'Content-Type': 'application/json' }

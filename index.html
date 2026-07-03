@@ -772,29 +772,33 @@
                 }
             }
 
-            if (downloadUrl.includes('?')) {
-                downloadUrl += `&timestamp=${Date.now()}`;
+            if (downloadUrl.startsWith('http://') || downloadUrl.startsWith('https://')) {
+                window.open(downloadUrl, '_blank');
             } else {
-                downloadUrl += `?timestamp=${Date.now()}`;
-            }
+                if (downloadUrl.includes('?')) {
+                    downloadUrl += `&timestamp=${Date.now()}`;
+                } else {
+                    downloadUrl += `?timestamp=${Date.now()}`;
+                }
 
-            const response = await fetch(downloadUrl, { cache: 'no-store' });
-            
-            if (!response.ok) {
-                throw new Error('File not found');
-            }
+                const response = await fetch(downloadUrl, { cache: 'no-store' });
+                
+                if (!response.ok) {
+                    throw new Error('File not found');
+                }
 
-            const blob = await response.blob();
-            const blobUrl = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = blobUrl;
-            a.download = fileName;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(blobUrl);
+                const blob = await response.blob();
+                const blobUrl = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = blobUrl;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(blobUrl);
+            }
         } catch (error) {
-            alert('Download failed: ' + error.message);
+            alert('下载失败: ' + error.message);
         } finally {
             button.textContent = originalText;
             button.disabled = false;

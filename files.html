@@ -483,9 +483,9 @@
 
     async function loadFiles(){
         try {
-            const res = await fetch('/api/manage-files?action=get', { cache: 'no-store' });
+            const res = await fetch('/api/latest-file', { cache: 'no-store' });
             const data = await res.json();
-            allFiles = Array.isArray(data) ? data : [];
+            allFiles = data.success && Array.isArray(data.files) ? data.files : [];
             renderFiles(allFiles);
         } catch(e){
             document.getElementById('fileList').innerHTML = `
@@ -533,8 +533,9 @@
         sorted.forEach((file, index) => {
             const isLatest = index === 0;
             const ext = getFileExt(file.name);
+            const fileUrl = file.url || '';
             html += `
-                <div class="file-item" onclick="viewFile('${escapeHtml(file.name)}')">
+                <div class="file-item" onclick="viewFile('${escapeHtml(file.name)}', '${escapeHtml(fileUrl)}')">
                     <div class="file-info">
                         <div class="file-name ${isLatest ? 'latest' : ''}">
                             ${escapeHtml(file.name)}
@@ -543,8 +544,8 @@
                         <div class="file-type">${ext.toUpperCase()} 文件</div>
                     </div>
                     <div class="file-actions" onclick="event.stopPropagation()">
-                        <button class="action-btn btn-view" onclick="viewFile('${escapeHtml(file.name)}')">查看</button>
-                        <button class="action-btn btn-download" onclick="downloadFile('${escapeHtml(file.name)}')">下载</button>
+                        <button class="action-btn btn-view" onclick="viewFile('${escapeHtml(file.name)}', '${escapeHtml(fileUrl)}')">查看</button>
+                        <button class="action-btn btn-download" onclick="downloadFile('${escapeHtml(fileUrl)}')">下载</button>
                     </div>
                 </div>
             `;
@@ -574,7 +575,7 @@
         return div.innerHTML;
     }
 
-    async function viewFile(fileName){
+    async function viewFile(fileName, fileUrl){
         const modal = document.getElementById('detailModal');
         const titleEl = document.getElementById('modalTitle');
         const bodyEl = document.getElementById('modalBody');
@@ -585,32 +586,33 @@
         document.body.style.overflow = 'hidden';
 
         try {
-            const res = await fetch(`/api/manage-files?action=get_content&name=${encodeURIComponent(fileName)}`, { cache: 'no-store' });
-            const result = await res.json();
-            
             const ext = getFileExt(fileName).toLowerCase();
             const isText = ['txt', 'md', 'json', 'js', 'html', 'css', 'py', 'java', 'xml', 'yml', 'yaml', 'conf', 'log'].includes(ext);
-            const hasContent = result.success && result.content && result.content.length > 0;
-
-            let contentHtml = '';
-            if(hasContent && isText){
-                contentHtml = `
-                    <div class="file-detail">
-                        <div class="detail-row">
-                            <span class="detail-label">文件名</span>
-                            <span class="detail-value">${escapeHtml(fileName)}</span>
+            
+            if(isText && fileUrl){
+                const res = await fetch(fileUrl);
+                if(res.ok){
+                    const content = await res.text();
+                    contentHtml = `
+                        <div class="file-detail">
+                            <div class="detail-row">
+                                <span class="detail-label">文件名</span>
+                                <span class="detail-value">${escapeHtml(fileName)}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">类型</span>
+                                <span class="detail-value">${ext.toUpperCase()} 文件</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">大小</span>
+                                <span class="detail-value">${content.length} 字符</span>
+                            </div>
                         </div>
-                        <div class="detail-row">
-                            <span class="detail-label">类型</span>
-                            <span class="detail-value">${ext.toUpperCase()} 文件</span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="detail-label">大小</span>
-                            <span class="detail-value">${result.content.length} 字符</span>
-                        </div>
-                    </div>
-                    <div class="file-content">${escapeHtml(result.content)}</div>
-                `;
+                        <div class="file-content">${escapeHtml(content)}</div>
+                    `;
+                } else {
+                    throw new Error('文件加载失败');
+                }
             } else {
                 contentHtml = `
                     <div class="file-detail">
@@ -625,11 +627,11 @@
                     </div>
                     <div style="text-align:center; padding: 30px; color: #64748b;">
                         <div style="font-size: 48px; margin-bottom: 15px;">📦</div>
-                        <p>这是一个二进制文件，无法在线预览</p>
+                        <p>${isText ? '无法加载远程文件内容' : '这是一个二进制文件，无法在线预览'}</p>
                         <p style="font-size: 13px; margin-top: 10px;">点击下方按钮下载查看</p>
                     </div>
                     <div style="text-align: center; margin-top: 20px;">
-                        <button class="glow-button" onclick="downloadFile('${escapeHtml(fileName)}'); closeModal();">下载文件</button>
+                        <button class="glow-button" onclick="downloadFile('${escapeHtml(fileUrl || fileName)}'); closeModal();">下载文件</button>
                     </div>
                 `;
             }
@@ -644,9 +646,13 @@
         }
     }
 
-    function downloadFile(fileName){
-        const url = `/files/${encodeURIComponent(fileName)}`;
-        window.open(url, '_blank');
+    function downloadFile(fileUrl){
+        if(fileUrl.startsWith('http://') || fileUrl.startsWith('https://')){
+            window.open(fileUrl, '_blank');
+        } else {
+            const url = `/files/${encodeURIComponent(fileUrl)}`;
+            window.open(url, '_blank');
+        }
     }
 
     function closeModal(){

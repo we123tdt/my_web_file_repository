@@ -228,18 +228,107 @@
         .header {
             margin-bottom: 30px;
         }
-        
+
         .header h2 {
             color: #fff;
             font-size: 20px;
             margin-bottom: 5px;
         }
-        
+
         .header p {
             color: #64748b;
             font-size: 12px;
         }
-        
+
+        .upload-area {
+            border: 2px dashed rgba(135, 206, 235, 0.3);
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .upload-area:hover {
+            border-color: #4ca9fa;
+            background: rgba(76, 169, 250, 0.1);
+        }
+
+        .upload-area.dragover {
+            border-color: #4ca9fa;
+            background: rgba(76, 169, 250, 0.2);
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .upload-text {
+            color: #94a3b8;
+            font-size: 16px;
+        }
+
+        .upload-hint {
+            color: #64748b;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+
+        .upload-progress {
+            display: none;
+            margin-top: 15px;
+        }
+
+        .upload-progress.active {
+            display: block;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(15, 23, 42, 0.8);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4ca9fa, #87CEEB);
+            border-radius: 4px;
+            transition: width 0.3s;
+            width: 0%;
+        }
+
+        .progress-text {
+            color: #94a3b8;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        .upload-divider {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+            color: #64748b;
+            font-size: 12px;
+        }
+
+        .upload-divider::before,
+        .upload-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(135, 206, 235, 0.2);
+        }
+
+        .upload-divider span {
+            padding: 0 15px;
+        }
+
         .action-row {
             display: flex;
             gap: 10px;
@@ -409,9 +498,27 @@
         <div class="upload-container">
             <div class="header">
                 <h2>📁 文件管理</h2>
-                <p>管理下载文件。注意：实际文件需通过部署上传。</p>
+                <p>上传文件到 GitHub 仓库，或手动添加文件名记录。</p>
             </div>
-            
+
+            <!-- 文件上传区域 -->
+            <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+                <div class="upload-icon">📤</div>
+                <div class="upload-text">点击或拖拽文件到这里上传</div>
+                <div class="upload-hint">文件将上传到 GitHub 仓库 (web-download-files)，支持最大 2GB</div>
+                <input type="file" id="fileInput" style="display:none" onchange="handleFileSelect(event)">
+            </div>
+
+            <!-- 上传进度 -->
+            <div class="upload-progress" id="uploadProgress">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-text" id="progressText">准备上传...</div>
+            </div>
+
+            <div class="upload-divider"><span>或手动添加文件名</span></div>
+
             <div class="action-row">
                 <input type="text" id="newFileName" placeholder="文件名（如 web_v2.zip）">
                 <button class="btn-primary" onclick="addFile()">添加</button>
@@ -446,7 +553,189 @@
     
     <script>
         const PASSWORD = '170254';
-        
+
+        // ========== 文件上传到 GitHub ==========
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                uploadToGithub(file);
+            }
+        }
+
+        // 拖拽上传
+        const uploadArea = document.getElementById('uploadArea');
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) {
+                uploadToGithub(file);
+            }
+        });
+
+        function showProgress(percent, text) {
+            const progressEl = document.getElementById('uploadProgress');
+            const fillEl = document.getElementById('progressFill');
+            const textEl = document.getElementById('progressText');
+            progressEl.classList.add('active');
+            fillEl.style.width = percent + '%';
+            textEl.textContent = text;
+        }
+
+        function hideProgress() {
+            setTimeout(() => {
+                document.getElementById('uploadProgress').classList.remove('active');
+                document.getElementById('progressFill').style.width = '0%';
+            }, 2000);
+        }
+
+        async function uploadToGithub(file) {
+            // GitHub Releases 最大 2GB
+            const maxTotalSize = 2 * 1024 * 1024 * 1024;
+            if (file.size > maxTotalSize) {
+                showStatus('uploadStatus', '❌ 文件过大（超过 2GB 限制）', 'error');
+                return;
+            }
+
+            showProgress(5, '正在准备上传...');
+
+            try {
+                // 1. 先调用 prepare 接口，判断上传方式
+                const prepareRes = await fetch('/api/upload-to-github', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'prepare',
+                        name: file.name,
+                        size: file.size
+                    })
+                });
+                const prepareData = await prepareRes.json();
+
+                if (!prepareData.success) {
+                    throw new Error(prepareData.error || '准备上传失败');
+                }
+
+                if (prepareData.mode === 'proxy') {
+                    // ========== 小文件：通过后端代理上传到 Contents API ==========
+                    await uploadSmallFile(file);
+                } else if (prepareData.mode === 'release') {
+                    // ========== 大文件：前端直接上传到 GitHub Releases ==========
+                    await uploadLargeFile(file, prepareData);
+                }
+
+                hideProgress();
+            } catch (error) {
+                showProgress(0, '❌ ' + error.message);
+                showStatus('uploadStatus', '❌ 上传失败：' + error.message, 'error');
+                hideProgress();
+            }
+        }
+
+        // 小文件上传（通过后端代理）
+        function uploadSmallFile(file) {
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '/api/upload-to-github');
+                xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+                xhr.setRequestHeader('X-File-Name', file.name);
+                xhr.setRequestHeader('X-File-Size', file.size);
+
+                xhr.upload.onprogress = (e) => {
+                    if (e.lengthComputable) {
+                        const percent = Math.round((e.loaded / e.total) * 90) + 5;
+                        showProgress(percent, `正在上传... ${formatSize(e.loaded)}/${formatSize(e.total)}`);
+                    }
+                };
+
+                xhr.onload = () => {
+                    try {
+                        const result = JSON.parse(xhr.responseText);
+                        if (xhr.status >= 200 && xhr.status < 300 && result.success) {
+                            showProgress(100, '✅ 上传成功！');
+                            showStatus('uploadStatus', '✅ 文件已上传到 GitHub 仓库', 'success');
+                            document.getElementById('fileInput').value = '';
+                            loadFiles();
+                            resolve(result);
+                        } else {
+                            reject(new Error(result.error || '上传失败'));
+                        }
+                    } catch (e) {
+                        reject(new Error('解析响应失败'));
+                    }
+                };
+
+                xhr.onerror = () => reject(new Error('网络错误'));
+                xhr.send(file);
+            });
+        }
+
+        // 大文件上传（直接上传到 GitHub Releases）
+        function uploadLargeFile(file, prepareData) {
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', prepareData.uploadUrl);
+                xhr.setRequestHeader('Authorization', `Bearer ${prepareData.token}`);
+                xhr.setRequestHeader('Accept', 'application/vnd.github+json');
+                xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+
+                xhr.upload.onprogress = (e) => {
+                    if (e.lengthComputable) {
+                        const percent = Math.round((e.loaded / e.total) * 90) + 5;
+                        showProgress(percent, `正在上传到 GitHub Releases... ${formatSize(e.loaded)}/${formatSize(e.total)}`);
+                    }
+                };
+
+                xhr.onload = async () => {
+                    try {
+                        if (xhr.status >= 200 && xhr.status < 300) {
+                            showProgress(95, '正在更新文件记录...');
+
+                            // 通知后端更新 KV 记录
+                            await fetch('/api/upload-to-github', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    action: 'record',
+                                    name: file.name,
+                                    url: prepareData.downloadUrl
+                                })
+                            });
+
+                            showProgress(100, '✅ 上传成功！');
+                            showStatus('uploadStatus', '✅ 文件已上传到 GitHub Releases', 'success');
+                            document.getElementById('fileInput').value = '';
+                            loadFiles();
+                            resolve();
+                        } else {
+                            const err = JSON.parse(xhr.responseText);
+                            reject(new Error(err.message || 'GitHub 上传失败'));
+                        }
+                    } catch (e) {
+                        reject(new Error('解析响应失败'));
+                    }
+                };
+
+                xhr.onerror = () => reject(new Error('网络错误'));
+                xhr.send(file);
+            });
+        }
+
+        // 格式化文件大小
+        function formatSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            if (bytes < 1024 * 1024 * 1024) return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+            return (bytes / 1024 / 1024 / 1024).toFixed(2) + ' GB';
+        }
+
         function showStatus(elementId, message, type) {
             const element = document.getElementById(elementId);
             element.textContent = message;
