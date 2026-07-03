@@ -88,6 +88,13 @@
     img:active{
         transform: scale(0.95);
     }
+    .avatar-hint{
+        margin-top: 15px;
+        color: #94a3b8;
+        font-size: 14px;
+        opacity: 0.7;
+        letter-spacing: 2px;
+    }
     @media (max-width: 768px){
         img{
             max-width: 80vw;
@@ -409,6 +416,7 @@
 <div class="navbar">
     <div class="navbar-title">AP STUDIO</div>
     <div class="navbar-right">
+        <a href="weather/" class="download-button">🌤️ Weather</a>
         <button class="download-button" onclick="downloadLatest()">📥 Download</button>
         <div class="navbar-time" id="navbarTime"></div>
     </div>
@@ -419,7 +427,8 @@
 <canvas id="rainCanvas"></canvas>
 <div class="avatar-wrapper">
     <div class="typewriter-text" id="typewriter"></div>
-    <img src="head.png" width="300" onclick="hackerAttack()" alt="点击触发特效">
+    <img src="head.png" width="300" onclick="hackerAttack()" ondblclick="openUploadPage()" alt="点击触发特效">
+    <div class="avatar-hint">双击头像打开文件管理</div>
 </div>
 
 
@@ -639,6 +648,10 @@
         if(event.target.id === 'infoModal'){
             closeModal();
         }
+    }
+
+    function openUploadPage(){
+        window.location.href = 'upload.html';
     }
 
     document.addEventListener('keydown', function(event){
