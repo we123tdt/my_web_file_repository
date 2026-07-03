@@ -3,7 +3,7 @@ export async function onRequest(context) {
 
     // 配置
     const GITHUB_TOKEN = env.GITHUB_TOKEN;
-    const GITHUB_USER = 'we123df';
+    const GITHUB_USER = 'we123tdt';
     const GITHUB_REPO = 'web-download-files';
     const BRANCH = 'main';
     const CDN_BASE_URL = `https://cdn.jsdelivr.net/gh/${GITHUB_USER}/${GITHUB_REPO}`;
