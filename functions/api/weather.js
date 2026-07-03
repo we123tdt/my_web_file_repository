@@ -28,12 +28,8 @@ export async function onRequest(context) {
     }
 
     try {
-        const geoUrl = `https://${API_HOST}/geo/v2/city/lookup?location=${encodeURIComponent(city)}`;
-        const geoRes = await fetch(geoUrl, {
-            headers: {
-                'Authorization': `Bearer ${API_KEY}`
-            }
-        });
+        const geoUrl = `https://${API_HOST}/geo/v2/city/lookup?location=${encodeURIComponent(city)}&key=${API_KEY}`;
+        const geoRes = await fetch(geoUrl);
         
         if (!geoRes.ok) {
             const errorText = await geoRes.text();
@@ -63,16 +59,12 @@ export async function onRequest(context) {
         const location = geoData.location[0];
         const locationId = location.id;
 
-        const weatherUrl = `https://${API_HOST}/weather/v7/now?location=${locationId}`;
-        const forecastUrl = `https://${API_HOST}/weather/v7/3d?location=${locationId}`;
+        const weatherUrl = `https://${API_HOST}/v7/weather/now?location=${locationId}&key=${API_KEY}`;
+        const forecastUrl = `https://${API_HOST}/v7/weather/3d?location=${locationId}&key=${API_KEY}`;
         
         const [weatherRes, forecastRes] = await Promise.all([
-            fetch(weatherUrl, {
-                headers: { 'Authorization': `Bearer ${API_KEY}` }
-            }),
-            fetch(forecastUrl, {
-                headers: { 'Authorization': `Bearer ${API_KEY}` }
-            })
+            fetch(weatherUrl),
+            fetch(forecastUrl)
         ]);
 
         if (!weatherRes.ok) {
