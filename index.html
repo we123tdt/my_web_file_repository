@@ -371,6 +371,29 @@
         font-family: 'Courier New', monospace;
         white-space: nowrap;
     }
+    .navbar-online{
+        color: #4ade80;
+        font-size: 13px;
+        font-weight: bold;
+        text-shadow: 0 0 10px rgba(74, 222, 128, 0.6);
+        letter-spacing: 1px;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .online-dot{
+        width: 8px;
+        height: 8px;
+        background: #4ade80;
+        border-radius: 50%;
+        box-shadow: 0 0 10px #4ade80;
+        animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse{
+        0%, 100%{ opacity: 1; }
+        50%{ opacity: 0.5; }
+    }
     .navbar-right{
         display: flex;
         align-items: center;
@@ -412,6 +435,7 @@
         <a href="links/" class="download-button">🔗 导航</a>
         <a href="time/" class="download-button">⏰ 时光机</a>
         <a href="weather/" class="download-button">🌤️ 天气</a>
+        <div class="navbar-online" id="navbarOnline"><span class="online-dot"></span>加载中</div>
         <div class="navbar-time" id="navbarTime"></div>
     </div>
 </div>
@@ -738,4 +762,25 @@
 
     updateTime();
     setInterval(updateTime, 1000);
+
+    const userId = localStorage.getItem('online_user_id') || 'user_' + Math.random().toString(36).substr(2, 10);
+    localStorage.setItem('online_user_id', userId);
+
+    async function updateOnlineCount(){
+        try {
+            const res = await fetch('/api/online-users', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId })
+            });
+            const data = await res.json();
+            const count = data.count || 1;
+            document.getElementById('navbarOnline').innerHTML = `<span class="online-dot"></span>在线 ${count} 人`;
+        } catch(e){
+            document.getElementById('navbarOnline').innerHTML = `<span class="online-dot"></span>在线 1 人`;
+        }
+    }
+
+    updateOnlineCount();
+    setInterval(updateOnlineCount, 20000);
 </script>
