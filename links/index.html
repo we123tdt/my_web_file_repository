@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Audiowide&family=Noto+Sans+SC:wght@400;700;900&display=swap" rel="stylesheet">
+    <title>网址导航 - AP 工作室</title>
+</head>
+<style>
+    body{
+        background-color: #0f172a;
+        text-align: center;
+        font-family: 'Noto Sans SC', 'Orbitron', 'Audiowide', sans-serif;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 40px 20px;
+        box-sizing: border-box;
+        min-height: 100vh;
+        margin: 0;
+    }
+
+    ::-webkit-scrollbar{
+        width: 10px;
+    }
+    ::-webkit-scrollbar-track{
+        background: #1e293b;
+    }
+    ::-webkit-scrollbar-thumb{
+        background: linear-gradient(180deg, #87CEEB, #ADD8E6);
+        border-radius: 5px;
+    }
+    ::-webkit-scrollbar-thumb:hover{
+        background: linear-gradient(180deg, #ADD8E6, #87CEEB);
+    }
+
+    h1{
+        color: rgb(76, 169, 250);
+        text-shadow: 0 0 20px rgb(76, 169, 250);
+        margin-bottom: 10px;
+        font-size: 36px;
+    }
+    h2{
+        color: rgb(224, 207, 16);
+        text-shadow: 0 0 20px rgb(224, 207, 16);
+    }
+
+    #rainCanvas{
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+        pointer-events: none;
+    }
+
+    .back-home{
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        color: rgb(135, 206, 235);
+        text-decoration: none;
+        font-size: 14px;
+        text-shadow: 0 0 10px rgba(135, 206, 235, 0.5);
+        transition: all 0.3s ease;
+        padding: 8px 15px;
+        border: 1px solid rgba(135, 206, 235, 0.3);
+        border-radius: 50px;
+        background: rgba(15, 23, 42, 0.8);
+        z-index: 100;
+    }
+    .back-home:hover{
+        color: rgb(224, 207, 16);
+        border-color: rgb(224, 207, 16);
+        text-shadow: 0 0 15px rgba(224, 207, 16, 0.6);
+        box-shadow: 0 0 20px rgba(224, 207, 16, 0.3);
+    }
+
+    /* ========== 搜索框 ========== */
+    .search-box{
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        max-width: 600px;
+        margin: 30px auto;
+        flex-wrap: wrap;
+    }
+    .search-input{
+        flex: 1;
+        min-width: 200px;
+        padding: 14px 24px;
+        font-size: 16px;
+        font-family: inherit;
+        background: rgba(30, 41, 59, 0.8);
+        border: 2px solid rgba(135, 206, 235, 0.3);
+        border-radius: 50px;
+        color: #fff;
+        outline: none;
+        transition: all 0.3s ease;
+        box-shadow: 0 0 20px rgba(135, 206, 235, 0.1);
+    }
+    .search-input:focus{
+        border-color: rgb(76, 169, 250);
+        box-shadow: 0 0 25px rgba(76, 169, 250, 0.3);
+    }
+    .search-input::placeholder{
+        color: #64748b;
+    }
+    .glow-button{
+        padding: 14px 28px;
+        font-size: 15px;
+        font-family: inherit;
+        font-weight: bold;
+        background: linear-gradient(135deg, #87CEEB, #ADD8E6);
+        color: #0f172a;
+        border: none;
+        border-radius: 50px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 0 20px rgba(135, 206, 235, 0.4);
+    }
+    .glow-button:hover{
+        transform: scale(1.05);
+        box-shadow: 0 0 30px rgba(135, 206, 235, 0.6);
+    }
+
+    .search-engines{
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 10px;
+    }
+    .engine-btn{
+        padding: 6px 16px;
+        font-size: 13px;
+        font-family: inherit;
+        background: rgba(15, 23, 42, 0.8);
+        color: #64748b;
+        border: 1px solid rgba(135, 206, 235, 0.2);
+        border-radius: 50px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .engine-btn:hover{
+        color: #87CEEB;
+        border-color: rgba(135, 206, 235, 0.5);
+    }
+    .engine-btn.active{
+        color: #0f172a;
+        background: linear-gradient(135deg, #87CEEB, #ADD8E6);
+        border-color: transparent;
+    }
+
+    /* ========== 分类标签 ========== */
+    .category-tabs{
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin: 20px auto 30px;
+    }
+    .cat-btn{
+        padding: 8px 20px;
+        font-size: 14px;
+        font-family: inherit;
+        font-weight: bold;
+        background: rgba(15, 23, 42, 0.8);
+        color: #94a3b8;
+        border: 1px solid rgba(135, 206, 235, 0.2);
+        border-radius: 50px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .cat-btn:hover{
+        color: #87CEEB;
+        border-color: rgba(135, 206, 235, 0.5);
+    }
+    .cat-btn.active{
+        color: #0f172a;
+        background: linear-gradient(135deg, #87CEEB, #ADD8E6);
+        border-color: transparent;
+        box-shadow: 0 0 15px rgba(135, 206, 235, 0.3);
+    }
+
+    /* ========== 网站卡片 ========== */
+    .links-grid{
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 16px;
+        max-width: 1100px;
+        margin: 0 auto;
+    }
+    .link-card{
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px;
+        background: rgba(30, 41, 59, 0.6);
+        border: 1px solid rgba(135, 206, 235, 0.2);
+        border-radius: 15px;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+        text-align: left;
+    }
+    .link-card:hover{
+        border-color: rgba(135, 206, 235, 0.6);
+        box-shadow: 0 0 25px rgba(135, 206, 235, 0.2);
+        transform: translateY(-3px);
+    }
+    .link-icon{
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        flex-shrink: 0;
+        background: rgba(135, 206, 235, 0.15);
+    }
+    .link-info{
+        flex: 1;
+        min-width: 0;
+    }
+    .link-name{
+        font-size: 15px;
+        font-weight: bold;
+        color: #e2e8f0;
+        margin-bottom: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .link-desc{
+        font-size: 12px;
+        color: #64748b;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .no-results{
+        text-align: center;
+        padding: 60px 20px;
+        color: #64748b;
+    }
+    .no-results-icon{
+        font-size: 64px;
+        margin-bottom: 20px;
+        opacity: 0.5;
+    }
+
+    @media (max-width: 600px){
+        h1{ font-size: 24px; }
+        .links-grid{ grid-template-columns: 1fr 1fr; }
+        .link-card{ flex-direction: column; text-align: center; gap: 8px; padding: 12px; }
+        .link-icon{ width: 36px; height: 36px; font-size: 18px; }
+        .link-name{ font-size: 13px; }
+        .link-desc{ font-size: 11px; }
+    }
+</style>
+
+<body>
+    <canvas id="rainCanvas"></canvas>
+    <a href="/" class="back-home">← 返回首页</a>
+
+    <h1>🔗 网址导航</h1>
+    <h2>探索互联网的星辰大海</h2>
+
+    <!-- 搜索引擎切换 -->
+    <div class="search-engines">
+        <button class="engine-btn active" onclick="setEngine('google', event)">🔍 Google</button>
+        <button class="engine-btn" onclick="setEngine('baidu', event)">🔍 百度</button>
+        <button class="engine-btn" onclick="setEngine('bing', event)">🔍 必应</button>
+    </div>
+
+    <!-- 搜索框 -->
+    <div class="search-box">
+        <input type="text" class="search-input" id="searchInput" placeholder="输入关键词搜索..." onkeydown="if(event.key==='Enter')doSearch()">
+        <button class="glow-button" onclick="doSearch()">搜索</button>
+    </div>
+
+    <!-- 分类标签 -->
+    <div class="category-tabs" id="categoryTabs"></div>
+
+    <!-- 网站卡片 -->
+    <div class="links-grid" id="linksGrid"></div>
+
+<script>
+    // ========== 数字雨背景 ==========
+    const canvas = document.getElementById('rainCanvas');
+    const ctx = canvas.getContext('2d');
+    let drops = [];
+
+    function resizeCanvas(){
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    function createRaindrops(){
+        drops = [];
+        for(let i = 0; i < 100; i++){
+            drops.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height * -1,
+                length: Math.random() * 25 + 20,
+                speed: Math.random() * 150 + 100,
+                opacity: Math.random() * 0.4 + 0.3
+            });
+        }
+    }
+    function updateRain(deltaTime){
+        const deltaSeconds = deltaTime / 1000;
+        for(const drop of drops){
+            drop.y += drop.speed * deltaSeconds;
+            if(drop.y > canvas.height + 20){
+                drop.y = -drop.length;
+                drop.x = Math.random() * canvas.width;
+            }
+        }
+    }
+    function drawRain(){
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = 'rgba(135, 206, 235, 0.5)';
+        ctx.lineWidth = 1;
+        for(const drop of drops){
+            ctx.globalAlpha = drop.opacity;
+            ctx.beginPath();
+            ctx.moveTo(drop.x, drop.y);
+            ctx.lineTo(drop.x, drop.y + drop.length);
+            ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+    }
+    let lastTime = 0;
+    function animateRain(time){
+        const deltaTime = time - lastTime;
+        lastTime = time;
+        updateRain(deltaTime);
+        drawRain();
+        requestAnimationFrame(animateRain);
+    }
+    window.addEventListener('resize', () => { resizeCanvas(); createRaindrops(); });
+    resizeCanvas();
+    createRaindrops();
+    requestAnimationFrame(animateRain);
+
+    // ========== 搜索引擎 ==========
+    let currentEngine = 'google';
+    const engines = {
+        google: 'https://www.google.com/search?q=',
+        baidu: 'https://www.baidu.com/s?wd=',
+        bing: 'https://www.bing.com/search?q='
+    };
+
+    function setEngine(engine, e){
+        currentEngine = engine;
+        document.querySelectorAll('.engine-btn').forEach(btn => btn.classList.remove('active'));
+        e.target.classList.add('active');
+    }
+
+    function doSearch(){
+        const query = document.getElementById('searchInput').value.trim();
+        if(!query) return;
+        window.open(engines[currentEngine] + encodeURIComponent(query), '_blank');
+    }
+
+    // ========== 网站数据 ==========
+    const categories = [
+        { id: 'all', name: '🌟 全部' },
+        { id: 'dev', name: '💻 开发' },
+        { id: 'tools', name: '🛠️ 工具' },
+        { id: 'social', name: '💬 社交' },
+        { id: 'media', name: '🎬 媒体' },
+        { id: 'learn', name: '📚 学习' },
+        { id: 'news', name: '📰 新闻' },
+        { id: 'game', name: '🎮 游戏' }
+    ];
+
+    const sites = [
+        // 开发
+        { name: 'GitHub', desc: '全球最大代码托管', url: 'https://github.com', icon: '🐙', cat: 'dev' },
+        { name: 'Stack Overflow', desc: '程序员问答社区', url: 'https://stackoverflow.com', icon: '📋', cat: 'dev' },
+        { name: 'MDN Web Docs', desc: 'Web 开发文档', url: 'https://developer.mozilla.org', icon: '📖', cat: 'dev' },
+        { name: 'CodePen', desc: '在线代码编辑器', url: 'https://codepen.io', icon: '✏️', cat: 'dev' },
+        { name: 'LeetCode', desc: '算法刷题平台', url: 'https://leetcode.cn', icon: '🧩', cat: 'dev' },
+        { name: 'V2EX', desc: '创意工作者社区', url: 'https://www.v2ex.com', icon: '💬', cat: 'dev' },
+        { name: '掘金', desc: '技术成长社区', url: 'https://juejin.cn', icon: '⛏️', cat: 'dev' },
+
+        // 工具
+        { name: 'Google', desc: '全球搜索引擎', url: 'https://www.google.com', icon: '🔍', cat: 'tools' },
+        { name: '百度', desc: '中文搜索引擎', url: 'https://www.baidu.com', icon: '🔍', cat: 'tools' },
+        { name: 'Wikipedia', desc: '自由的百科全书', url: 'https://zh.wikipedia.org', icon: '📚', cat: 'tools' },
+        { name: 'DeepL', desc: '精准翻译工具', url: 'https://www.deepl.com', icon: '🌐', cat: 'tools' },
+        { name: 'TinyPNG', desc: '图片压缩工具', url: 'https://tinypng.com', icon: '🖼️', cat: 'tools' },
+        { name: '草料二维码', desc: '二维码生成器', url: 'https://cli.im', icon: '📱', cat: 'tools' },
+        { name: 'JSON.cn', desc: 'JSON 格式化', url: 'https://www.json.cn', icon: '📄', cat: 'tools' },
+
+        // 社交
+        { name: '微博', desc: '中文社交平台', url: 'https://weibo.com', icon: '🐦', cat: 'social' },
+        { name: '知乎', desc: '问答社区', url: 'https://www.zhihu.com', icon: '💡', cat: 'social' },
+        { name: '豆瓣', desc: '文艺生活社区', url: 'https://www.douban.com', icon: '🎬', cat: 'social' },
+        { name: '贴吧', desc: '百度贴吧', url: 'https://tieba.baidu.com', icon: '💬', cat: 'social' },
+        { name: 'X (Twitter)', desc: '国际社交平台', url: 'https://x.com', icon: '✖️', cat: 'social' },
+        { name: 'Reddit', desc: '英文社区论坛', url: 'https://www.reddit.com', icon: '🤖', cat: 'social' },
+
+        // 媒体
+        { name: '哔哩哔哩', desc: '弹幕视频网站', url: 'https://www.bilibili.com', icon: '📺', cat: 'media' },
+        { name: 'YouTube', desc: '全球视频平台', url: 'https://www.youtube.com', icon: '▶️', cat: 'media' },
+        { name: '爱奇艺', desc: '在线视频平台', url: 'https://www.iqiyi.com', icon: '🎬', cat: 'media' },
+        { name: '腾讯视频', desc: '在线视频平台', url: 'https://v.qq.com', icon: '🎥', cat: 'media' },
+        { name: '网易云音乐', desc: '音乐发现平台', url: 'https://music.163.com', icon: '🎵', cat: 'media' },
+        { name: 'Spotify', desc: '全球音乐平台', url: 'https://open.spotify.com', icon: '🎶', cat: 'media' },
+
+        // 学习
+        { name: 'Coursera', desc: '在线课程平台', url: 'https://www.coursera.org', icon: '🎓', cat: 'learn' },
+        { name: 'Khan Academy', desc: '免费教育平台', url: 'https://www.khanacademy.org', icon: '📚', cat: 'learn' },
+        { name: '中国大学MOOC', desc: '中文慕课平台', url: 'https://www.icourse163.org', icon: '🏫', cat: 'learn' },
+        { name: 'W3School', desc: 'Web 教程', url: 'https://www.w3school.com.cn', icon: '🌐', cat: 'learn' },
+        { name: '菜鸟教程', desc: '编程入门教程', url: 'https://www.runoob.com', icon: '🐦', cat: 'learn' },
+        { name: 'Duolingo', desc: '语言学习平台', url: 'https://www.duolingo.com', icon: '🦉', cat: 'learn' },
+
+        // 新闻
+        { name: 'BBC 中文', desc: '国际新闻', url: 'https://www.bbc.com/zhongwen/simp', icon: '📰', cat: 'news' },
+        { name: '澎湃新闻', desc: '中文新闻', url: 'https://www.thepaper.cn', icon: '📃', cat: 'news' },
+        { name: '36氪', desc: '科技创业资讯', url: 'https://36kr.com', icon: '💡', cat: 'news' },
+        { name: 'Hacker News', desc: '极客新闻', url: 'https://news.ycombinator.com', icon: '🔥', cat: 'news' },
+        { name: 'Product Hunt', desc: '新品发现', url: 'https://www.producthunt.com', icon: '🚀', cat: 'news' },
+
+        // 游戏
+        { name: 'Steam', desc: '游戏平台', url: 'https://store.steampowered.com', icon: '🎮', cat: 'game' },
+        { name: 'Epic Games', desc: '游戏商城', url: 'https://store.epicgames.com', icon: '🎮', cat: 'game' },
+        { name: 'itch.io', desc: '独立游戏平台', url: 'https://itch.io', icon: '🕹️', cat: 'game' },
+        { name: 'GOG', desc: 'DRM-free 游戏', url: 'https://www.gog.com', icon: '🎮', cat: 'game' }
+    ];
+
+    let currentCategory = 'all';
+
+    // ========== 渲染分类 ==========
+    function renderCategories(){
+        const container = document.getElementById('categoryTabs');
+        container.innerHTML = categories.map(cat => `
+            <button class="cat-btn ${cat.id === currentCategory ? 'active' : ''}" onclick="setCategory('${cat.id}')">${cat.name}</button>
+        `).join('');
+    }
+
+    function setCategory(catId){
+        currentCategory = catId;
+        renderCategories();
+        renderLinks();
+    }
+
+    // ========== 渲染网站卡片 ==========
+    function renderLinks(){
+        const searchQuery = document.getElementById('searchInput').value.trim().toLowerCase();
+        let filtered = sites;
+
+        if(currentCategory !== 'all'){
+            filtered = filtered.filter(s => s.cat === currentCategory);
+        }
+        if(searchQuery){
+            filtered = filtered.filter(s =>
+                s.name.toLowerCase().includes(searchQuery) ||
+                s.desc.toLowerCase().includes(searchQuery)
+            );
+        }
+
+        const grid = document.getElementById('linksGrid');
+        if(filtered.length === 0){
+            grid.innerHTML = `
+                <div class="no-results" style="grid-column: 1 / -1;">
+                    <div class="no-results-icon">🔍</div>
+                    <p>没有找到匹配的网站</p>
+                </div>
+            `;
+            return;
+        }
+
+        grid.innerHTML = filtered.map(s => `
+            <a href="${s.url}" class="link-card" target="_blank" rel="noopener">
+                <div class="link-icon">${s.icon}</div>
+                <div class="link-info">
+                    <div class="link-name">${s.name}</div>
+                    <div class="link-desc">${s.desc}</div>
+                </div>
+            </a>
+        `).join('');
+    }
+
+    // 搜索框输入时实时筛选网站
+    document.getElementById('searchInput').addEventListener('input', renderLinks);
+
+    // ========== 初始化 ==========
+    renderCategories();
+    renderLinks();
+</script>
+</body>
+</html>
