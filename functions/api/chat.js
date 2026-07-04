@@ -55,9 +55,10 @@ export async function onRequest(context) {
             } catch (e) { console.error('Binding error:', e.message); }
         }
 
-        // 方式二：API Token（推荐，不需要找 Binding 设置）
+        // 方式二：API Token
         if (!reply && env.CF_API_TOKEN && env.CF_ACCOUNT_ID) {
             try {
+                const tokenPreview = env.CF_API_TOKEN.substring(0, 8) + '...';
                 const res = await fetch(
                     `https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/ai/run/@cf/qwen/qwen1.5-14b-chat-awq`,
                     {
@@ -70,8 +71,29 @@ export async function onRequest(context) {
                     }
                 );
                 const data = await res.json();
-                reply = data?.result?.response;
-            } catch (e) { console.error('API Token error:', e.message); }
+
+                if (data?.result?.response) {
+                    reply = data.result.response;
+                } else if (data?.errors) {
+                    const errMsg = data.errors[0]?.message || JSON.stringify(data.errors);
+                    return new Response(JSON.stringify({
+                        reply: `❌ **API 调用失败**\n\n` +
+                               `错误：${errMsg}\n\n` +
+                               `可能原因：创建的 Token 没有 Workers AI 权限。\n` +
+                               `请重新创建 Token，选择 **Workers AI** 模板。`
+                    }), {
+                        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+                    });
+                }
+            } catch (e) {
+                return new Response(JSON.stringify({
+                    reply: `❌ **API 请求出错**\n\n` +
+                           `错误：${e.message}\n\n` +
+                           `请检查环境变量是否正确设置并重新部署。`
+                }), {
+                    headers: { 'Content-Type': 'application/json', ...corsHeaders }
+                });
+            }
         }
 
         if (reply) {
@@ -80,20 +102,23 @@ export async function onRequest(context) {
             });
         }
 
-        // 都没配置，显示提示
+        // 检查哪些环境变量缺失
+        const missing = [];
+        if (!env.CF_API_TOKEN) missing.push('`CF_API_TOKEN`');
+        if (!env.CF_ACCOUNT_ID) missing.push('`CF_ACCOUNT_ID`');
+
         return new Response(JSON.stringify({
-            reply: `## 🤖 需要配置才能使用 AI\n\n` +
-                   `**最简单的配置方法（2 分钟）：**\n\n` +
-                   `**步骤 1：** 登录 [Cloudflare](https://dash.cloudflare.com)\n\n` +
-                   `**步骤 2：** 左侧菜单 → **My Profile** → **API Tokens**\n\n` +
-                   `**步骤 3：** 点 **Create Token** → 找到 **Workers AI** 模板 → 点 **Use template**\n\n` +
-                   `**步骤 4：** 点 **Continue to summary** → **Create Token** → **复制 Token**\n\n` +
-                   `**步骤 5：** 回到项目 **Settings** → **Environment Variables**\n` +
-                   `  添加：\`CF_API_TOKEN\` = 你复制的 Token\n` +
-                   `  添加：\`CF_ACCOUNT_ID\` = 你的 Cloudflare 账号 ID\n` +
-                   `  （账号 ID 在右侧栏可以找到）\n\n` +
-                   `**步骤 6：** **Save and Deploy** 重新部署\n\n` +
-                   `搞定后刷新页面就能用了！完全免费 🎉`
+            reply: `## 🤖 环境变量未生效\n\n` +
+                   (missing.length > 0
+                       ? `**缺失的变量：** ${missing.join(', ')}\n\n`
+                       : '环境变量已设置但未能调用 AI，可能是 Token 权限问题。\n\n') +
+                   `**请检查：**\n\n` +
+                   `1️⃣ 是否已添加这两个环境变量？\n` +
+                   `   - \`CF_API_TOKEN\` = 你的 Token\n` +
+                   `   - \`CF_ACCOUNT_ID\` = d44f3f7811ae2438d6809ee52b64b77b\n\n` +
+                   `2️⃣ **关键：添加后要点 "Save and Deploy" 重新部署！**\n` +
+                   `   只点 Save 不会生效。\n\n` +
+                   `3️⃣ 部署完成（约1分钟）后刷新此页面。`
         }), {
             headers: { 'Content-Type': 'application/json', ...corsHeaders }
         });
