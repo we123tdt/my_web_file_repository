@@ -1,11 +1,10 @@
-// AI 聊天 API - 使用 DeepSeek API
-// 需要在 Cloudflare Pages 环境变量中设置 DEEPSEEK_API_KEY
-// 获取免费 API Key: https://platform.deepseek.com
+// AI 聊天 API - 使用 Cloudflare Workers AI（完全免费）
+// 方式一：使用 AI Binding（变量名 AI）
+// 方式二：使用 API Token（环境变量 CF_API_TOKEN + CF_ACCOUNT_ID）
 
 export async function onRequest(context) {
     const { request, env } = context;
 
-    // 允许跨域
     const corsHeaders = {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -34,108 +33,74 @@ export async function onRequest(context) {
             });
         }
 
-        // 获取 API Key - 支持多种环境变量名称
-        const apiKey = env.DEEPSEEK_API_KEY || env.DEEPSEEK_KEY || env.DEEPSEEK_APIKEY;
+        const aiMessages = [
+            { role: 'system', content: '你是一个友好的 AI 助手，请用中文回答。回答简洁准确、热情友好。' },
+            ...messages.slice(-20).map(m => ({
+                role: m.role === 'assistant' ? 'assistant' : 'user',
+                content: m.content
+            }))
+        ];
 
-        // 调试信息：检查环境变量是否存在（不暴露具体值）
-        const keyExists = !!apiKey;
-        const keyPrefix = apiKey ? apiKey.substring(0, 5) + '...' : '未设置';
+        let reply = null;
 
-        if (!apiKey) {
-            return new Response(JSON.stringify({
-                reply: `⚠️ **环境变量 DEEPSEEK_API_KEY 未检测到**\n\n` +
-                       `你需要在 Cloudflare 后台设置环境变量。\n\n` +
-                       `**操作步骤：**\n` +
-                       `1. 登录 [Cloudflare Dashboard](https://dash.cloudflare.com)\n` +
-                       `2. 进入 **Workers & Pages** → 你的项目\n` +
-                       `3. 点击 **Settings** → **Environment Variables**\n` +
-                       `4. 点击 **Add variable**\n` +
-                       `5. 名称填：\`DEEPSEEK_API_KEY\`\n` +
-                       `6. 值填：你的 DeepSeek API Key（以 sk- 开头）\n` +
-                       `7. 点击 **Save and Deploy** 重新部署\n\n` +
-                       `💡 免费获取 API Key：[platform.deepseek.com](https://platform.deepseek.com)`
-            }), {
-                headers: { 'Content-Type': 'application/json', ...corsHeaders }
-            });
+        // 方式一：AI Binding
+        if (env.AI) {
+            try {
+                const result = await env.AI.run('@cf/qwen/qwen1.5-14b-chat-awq', {
+                    messages: aiMessages,
+                    max_tokens: 2048,
+                    temperature: 0.7
+                });
+                reply = result?.response;
+            } catch (e) { console.error('Binding error:', e.message); }
         }
 
-        // 调用 DeepSeek API
-        const response = await fetch('https://api.deepseek.com/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`
-            },
-            body: JSON.stringify({
-                model: 'deepseek-chat',
-                messages: [
+        // 方式二：API Token（推荐，不需要找 Binding 设置）
+        if (!reply && env.CF_API_TOKEN && env.CF_ACCOUNT_ID) {
+            try {
+                const res = await fetch(
+                    `https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/ai/run/@cf/qwen/qwen1.5-14b-chat-awq`,
                     {
-                        role: 'system',
-                        content: '你是一个友好的 AI 助手。请用中文回答问题，回答要简洁准确。'
-                    },
-                    ...messages.slice(-20)
-                ],
-                max_tokens: 2048,
-                temperature: 0.7,
-                stream: false
-            })
-        });
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${env.CF_API_TOKEN}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ messages: aiMessages })
+                    }
+                );
+                const data = await res.json();
+                reply = data?.result?.response;
+            } catch (e) { console.error('API Token error:', e.message); }
+        }
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            let errorMsg = '';
-            
-            if (response.status === 401) {
-                errorMsg = `❌ **API Key 无效**（HTTP 401）\n\n` +
-                           `你设置的 API Key 不正确，请检查：\n` +
-                           `1. 当前 Key 前缀：\`${keyPrefix}\`\n` +
-                           `2. 确认 Key 以 \`sk-\` 开头\n` +
-                           `3. 去 [platform.deepseek.com](https://platform.deepseek.com) 重新创建\n` +
-                           `4. 在 Cloudflare 更新后重新部署`;
-            } else if (response.status === 402) {
-                errorMsg = `❌ **账户余额不足**（HTTP 402）\n\n` +
-                           `你的 DeepSeek 账户需要充值。\n` +
-                           `不过别担心，新用户有 500 万免费 tokens！\n` +
-                           `去 [platform.deepseek.com](https://platform.deepseek.com) 查看。`;
-            } else if (response.status === 429) {
-                errorMsg = `⏳ **请求太频繁**（HTTP 429）\n\n` +
-                           `请稍等几秒再试。`;
-            } else if (response.status >= 500) {
-                errorMsg = `🔧 **DeepSeek 服务器繁忙**（HTTP ${response.status}）\n\n` +
-                           `请稍后再试。`;
-            } else {
-                errorMsg = `⚠️ **API 请求失败**（HTTP ${response.status}）\n\n` +
-                           `错误详情：\`${errorText.substring(0, 200)}\``;
-            }
-
-            return new Response(JSON.stringify({ reply: errorMsg }), {
+        if (reply) {
+            return new Response(JSON.stringify({ reply }), {
                 headers: { 'Content-Type': 'application/json', ...corsHeaders }
             });
         }
 
-        const data = await response.json();
-        const reply = data.choices?.[0]?.message?.content;
-
-        if (!reply) {
-            return new Response(JSON.stringify({
-                reply: '⚠️ AI 返回了空回复，请重试。'
-            }), {
-                headers: { 'Content-Type': 'application/json', ...corsHeaders }
-            });
-        }
-
-        return new Response(JSON.stringify({ reply }), {
+        // 都没配置，显示提示
+        return new Response(JSON.stringify({
+            reply: `## 🤖 需要配置才能使用 AI\n\n` +
+                   `**最简单的配置方法（2 分钟）：**\n\n` +
+                   `**步骤 1：** 登录 [Cloudflare](https://dash.cloudflare.com)\n\n` +
+                   `**步骤 2：** 左侧菜单 → **My Profile** → **API Tokens**\n\n` +
+                   `**步骤 3：** 点 **Create Token** → 找到 **Workers AI** 模板 → 点 **Use template**\n\n` +
+                   `**步骤 4：** 点 **Continue to summary** → **Create Token** → **复制 Token**\n\n` +
+                   `**步骤 5：** 回到项目 **Settings** → **Environment Variables**\n` +
+                   `  添加：\`CF_API_TOKEN\` = 你复制的 Token\n` +
+                   `  添加：\`CF_ACCOUNT_ID\` = 你的 Cloudflare 账号 ID\n` +
+                   `  （账号 ID 在右侧栏可以找到）\n\n` +
+                   `**步骤 6：** **Save and Deploy** 重新部署\n\n` +
+                   `搞定后刷新页面就能用了！完全免费 🎉`
+        }), {
             headers: { 'Content-Type': 'application/json', ...corsHeaders }
         });
 
     } catch (error) {
         return new Response(JSON.stringify({
-            reply: `⚠️ **服务器内部错误**\n\n` +
-                   `错误信息：\`${error.message}\`\n\n` +
-                   `请检查：\n` +
-                   `1. Cloudflare 环境变量是否已设置 \`DEEPSEEK_API_KEY\`\n` +
-                   `2. 设置后是否点击了 **Save and Deploy** 重新部署\n` +
-                   `3. 如果已设置，检查 Key 是否正确`
+            reply: `⚠️ 出错了：${error.message}`
         }), {
             headers: { 'Content-Type': 'application/json', ...corsHeaders }
         });
