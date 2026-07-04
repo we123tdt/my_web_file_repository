@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>留言板</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+SC:wght@400;700;900&display=swap" rel="stylesheet">
+</head>
+<style>
+    *{
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    body{
+        background-color: #0f172a;
+        font-family: 'Noto Sans SC', sans-serif;
+        min-height: 100vh;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+    ::-webkit-scrollbar{
+        width: 10px;
+    }
+    ::-webkit-scrollbar-track{
+        background: #1e293b;
+    }
+    ::-webkit-scrollbar-thumb{
+        background: linear-gradient(180deg, #87CEEB, #ADD8E6);
+        border-radius: 5px;
+    }
+
+    /* 导航栏 */
+    .navbar{
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 60px;
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95));
+        backdrop-filter: blur(10px);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 20px;
+        box-shadow: 0 2px 20px rgba(76, 169, 250, 0.3);
+        z-index: 9999;
+        border-bottom: 1px solid rgba(135, 206, 235, 0.3);
+    }
+    .navbar-title{
+        color: rgb(135, 206, 235);
+        font-size: 20px;
+        font-weight: bold;
+        text-shadow: 0 0 10px rgba(135, 206, 235, 0.5);
+        letter-spacing: 2px;
+    }
+    .navbar-right{
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .nav-btn{
+        padding: 8px 16px;
+        font-size: 14px;
+        font-weight: bold;
+        font-family: inherit;
+        background: linear-gradient(135deg, #87CEEB, #ADD8E6);
+        color: #0f172a;
+        border: none;
+        border-radius: 20px;
+        cursor: pointer;
+        text-decoration: none;
+        box-shadow: 0 0 10px rgba(135, 206, 235, 0.6);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .nav-btn:hover{
+        transform: scale(1.05);
+        box-shadow: 0 0 20px rgba(135, 206, 235, 0.8);
+    }
+
+    /* 主内容区 */
+    .container{
+        max-width: 700px;
+        margin: 80px auto 40px;
+        padding: 0 16px;
+    }
+
+    /* 发送区域 */
+    .send-box{
+        background: linear-gradient(135deg, #1e293b, #0f172a);
+        border: 1px solid rgba(135, 206, 235, 0.3);
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 30px;
+        box-shadow: 0 0 30px rgba(135, 206, 235, 0.1);
+    }
+    .send-box h2{
+        color: rgb(135, 206, 235);
+        text-shadow: 0 0 15px rgba(135, 206, 235, 0.5);
+        margin-bottom: 16px;
+        font-size: 20px;
+    }
+    .input-row{
+        display: flex;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+    .input-nickname{
+        flex: 0 0 140px;
+        padding: 10px 14px;
+        background: #0f172a;
+        border: 1px solid rgba(135, 206, 235, 0.3);
+        border-radius: 10px;
+        color: #e2e8f0;
+        font-size: 14px;
+        font-family: inherit;
+        outline: none;
+        transition: border-color 0.3s;
+    }
+    .input-nickname:focus{
+        border-color: rgba(135, 206, 235, 0.7);
+        box-shadow: 0 0 10px rgba(135, 206, 235, 0.2);
+    }
+    .input-nickname::placeholder{
+        color: #475569;
+    }
+    .char-count{
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        color: #475569;
+        font-size: 13px;
+    }
+    .char-count .current{
+        color: #94a3b8;
+    }
+    .char-count .warn{
+        color: #f87171;
+    }
+    textarea{
+        width: 100%;
+        padding: 12px 14px;
+        background: #0f172a;
+        border: 1px solid rgba(135, 206, 235, 0.3);
+        border-radius: 10px;
+        color: #e2e8f0;
+        font-size: 15px;
+        font-family: inherit;
+        outline: none;
+        resize: vertical;
+        min-height: 80px;
+        max-height: 200px;
+        transition: border-color 0.3s;
+        line-height: 1.6;
+    }
+    textarea:focus{
+        border-color: rgba(135, 206, 235, 0.7);
+        box-shadow: 0 0 10px rgba(135, 206, 235, 0.2);
+    }
+    textarea::placeholder{
+        color: #475569;
+    }
+    .send-btn{
+        margin-top: 14px;
+        padding: 10px 30px;
+        font-size: 15px;
+        font-weight: bold;
+        font-family: inherit;
+        background: linear-gradient(135deg, #87CEEB, #ADD8E6);
+        color: #0f172a;
+        border: none;
+        border-radius: 25px;
+        cursor: pointer;
+        box-shadow: 0 0 15px rgba(135, 206, 235, 0.5);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .send-btn:hover{
+        transform: scale(1.05);
+        box-shadow: 0 0 25px rgba(135, 206, 235, 0.7);
+    }
+    .send-btn:active{
+        transform: scale(0.95);
+    }
+    .send-btn:disabled{
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    /* 留言列表 */
+    .messages-header{
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+    }
+    .messages-header h2{
+        color: rgb(135, 206, 235);
+        text-shadow: 0 0 15px rgba(135, 206, 235, 0.5);
+        font-size: 20px;
+    }
+    .messages-count{
+        color: #64748b;
+        font-size: 13px;
+    }
+    .message-list{
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+    .message-card{
+        background: linear-gradient(135deg, #1e293b, #0f172a);
+        border: 1px solid rgba(135, 206, 235, 0.2);
+        border-radius: 14px;
+        padding: 18px 20px;
+        transition: border-color 0.3s, box-shadow 0.3s;
+        animation: fadeInUp 0.4s ease;
+    }
+    .message-card:hover{
+        border-color: rgba(135, 206, 235, 0.4);
+        box-shadow: 0 0 20px rgba(135, 206, 235, 0.1);
+    }
+    .message-top{
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+    }
+    .message-nickname{
+        font-weight: bold;
+        font-size: 15px;
+        background: linear-gradient(135deg, #87CEEB, #ADD8E6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    .message-time{
+        color: #475569;
+        font-size: 12px;
+    }
+    .message-content{
+        color: #cbd5e1;
+        font-size: 14px;
+        line-height: 1.7;
+        word-break: break-word;
+        white-space: pre-wrap;
+    }
+
+    /* 空状态 */
+    .empty-state{
+        text-align: center;
+        padding: 60px 20px;
+        color: #475569;
+    }
+    .empty-state .icon{
+        font-size: 48px;
+        margin-bottom: 16px;
+    }
+    .empty-state p{
+        font-size: 15px;
+    }
+
+    /* 加载动画 */
+    .loading{
+        text-align: center;
+        padding: 40px;
+        color: #64748b;
+    }
+    .loading .dots::after{
+        content: '';
+        animation: dots 1.5s steps(4, end) infinite;
+    }
+    @keyframes dots{
+        0%{ content: ''; }
+        25%{ content: '.'; }
+        50%{ content: '..'; }
+        75%{ content: '...'; }
+    }
+
+    /* 提示消息 */
+    .toast{
+        position: fixed;
+        top: 80px;
+        left: 50%;
+        transform: translateX(-50%) translateY(-20px);
+        padding: 12px 24px;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: bold;
+        z-index: 99999;
+        opacity: 0;
+        transition: all 0.3s ease;
+        pointer-events: none;
+    }
+    .toast.show{
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+    .toast.success{
+        background: linear-gradient(135deg, #065f46, #047857);
+        color: #6ee7b7;
+        border: 1px solid #6ee7b7;
+        box-shadow: 0 0 20px rgba(110, 231, 183, 0.3);
+    }
+    .toast.error{
+        background: linear-gradient(135deg, #7f1d1d, #991b1b);
+        color: #fca5a5;
+        border: 1px solid #fca5a5;
+        box-shadow: 0 0 20px rgba(252, 165, 165, 0.3);
+    }
+
+    @keyframes fadeInUp{
+        from{
+            opacity: 0;
+            transform: translateY(15px);
+        }
+        to{
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @media (max-width: 768px){
+        .input-row{
+            flex-direction: column;
+            gap: 8px;
+        }
+        .input-nickname{
+            flex: 1;
+        }
+        .send-box{
+            padding: 18px;
+        }
+        .message-card{
+            padding: 14px 16px;
+        }
+    }
+</style>
+
+<div class="navbar">
+    <div class="navbar-title">💬 留言板</div>
+    <div class="navbar-right">
+        <a href="/" class="nav-btn">🏠 主页</a>
+    </div>
+</div>
+
+<div class="container">
+    <!-- 发送区域 -->
+    <div class="send-box">
+        <h2>✍️ 写下你的留言</h2>
+        <div class="input-row">
+            <input type="text" class="input-nickname" id="nickname" placeholder="昵称（可选）" maxlength="20">
+            <div class="char-count"><span id="charCount" class="current">0</span>/500</div>
+        </div>
+        <textarea id="messageContent" placeholder="说点什么吧..." maxlength="500"></textarea>
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()">发送留言</button>
+    </div>
+
+    <!-- 留言列表 -->
+    <div class="messages-header">
+        <h2>📋 所有留言</h2>
+        <div class="messages-count" id="messagesCount"></div>
+    </div>
+    <div id="messageList" class="message-list">
+        <div class="loading">加载中<span class="dots"></span></div>
+    </div>
+</div>
+
+<!-- 提示消息 -->
+<div class="toast" id="toast"></div>
+
+<script>
+    const contentEl = document.getElementById('messageContent');
+    const charCountEl = document.getElementById('charCount');
+    const sendBtn = document.getElementById('sendBtn');
+
+    // 字数统计
+    contentEl.addEventListener('input', function(){
+        const len = this.value.length;
+        charCountEl.textContent = len;
+        if(len > 450){
+            charCountEl.className = 'warn';
+        } else {
+            charCountEl.className = 'current';
+        }
+    });
+
+    // Ctrl+Enter 发送
+    contentEl.addEventListener('keydown', function(e){
+        if(e.ctrlKey && e.key === 'Enter'){
+            sendMessage();
+        }
+    });
+
+    // 显示提示
+    function showToast(msg, type){
+        const toast = document.getElementById('toast');
+        toast.textContent = msg;
+        toast.className = 'toast ' + type;
+        setTimeout(() => toast.classList.add('show'), 10);
+        setTimeout(() => toast.classList.remove('show'), 2500);
+    }
+
+    // 发送留言
+    async function sendMessage(){
+        const content = contentEl.value.trim();
+        if(!content){
+            showToast('请输入留言内容', 'error');
+            return;
+        }
+        const nickname = document.getElementById('nickname').value.trim();
+
+        sendBtn.disabled = true;
+        sendBtn.textContent = '发送中...';
+
+        try{
+            const res = await fetch('/api/messages', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nickname, content })
+            });
+            const data = await res.json();
+
+            if(data.success){
+                showToast('留言发送成功！', 'success');
+                contentEl.value = '';
+                charCountEl.textContent = '0';
+                charCountEl.className = 'current';
+                loadMessages();
+            } else {
+                showToast(data.error || '发送失败', 'error');
+            }
+        } catch(e){
+            showToast('网络错误，请重试', 'error');
+        }
+
+        sendBtn.disabled = false;
+        sendBtn.textContent = '发送留言';
+    }
+
+    // 格式化时间
+    function formatTime(timestamp){
+        const now = Date.now();
+        const diff = now - timestamp;
+        const seconds = Math.floor(diff / 1000);
+        const minutes = Math.floor(seconds / 60);
+        const hours = Math.floor(minutes / 60);
+        const days = Math.floor(hours / 24);
+
+        if(seconds < 60) return '刚刚';
+        if(minutes < 60) return minutes + '分钟前';
+        if(hours < 24) return hours + '小时前';
+        if(days < 7) return days + '天前';
+
+        const d = new Date(timestamp);
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        const h = String(d.getHours()).padStart(2, '0');
+        const m = String(d.getMinutes()).padStart(2, '0');
+        return `${month}-${day} ${h}:${m}`;
+    }
+
+    // 加载留言
+    async function loadMessages(){
+        const listEl = document.getElementById('messageList');
+        const countEl = document.getElementById('messagesCount');
+
+        try{
+            const res = await fetch('/api/messages', { cache: 'no-store' });
+            const data = await res.json();
+
+            if(data.success && data.messages.length > 0){
+                countEl.textContent = `共 ${data.messages.length} 条`;
+                listEl.innerHTML = data.messages.map(msg => `
+                    <div class="message-card">
+                        <div class="message-top">
+                            <span class="message-nickname">${escapeHtml(msg.nickname)}</span>
+                            <span class="message-time">${formatTime(msg.timestamp)}</span>
+                        </div>
+                        <div class="message-content">${escapeHtml(msg.content)}</div>
+                    </div>
+                `).join('');
+            } else {
+                countEl.textContent = '';
+                listEl.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">💭</div>
+                        <p>还没有留言，快来写下第一条吧！</p>
+                    </div>
+                `;
+            }
+        } catch(e){
+            listEl.innerHTML = `
+                <div class="empty-state">
+                    <div class="icon">⚠️</div>
+                    <p>加载失败，请刷新重试</p>
+                </div>
+            `;
+        }
+    }
+
+    // HTML转义防XSS
+    function escapeHtml(str){
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    // 初始加载
+    loadMessages();
+
+    // 每30秒自动刷新留言
+    setInterval(loadMessages, 30000);
+</script>
+</html>
