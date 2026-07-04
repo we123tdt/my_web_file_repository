@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Audiowide&family=Noto+Sans+SC:wght@400;700;900&display=swap" rel="stylesheet">
+    <title>时光机 - AP 工作室</title>
+</head>
+<style>
+    body{
+        background-color: #0f172a;
+        text-align: center;
+        font-family: 'Noto Sans SC', 'Orbitron', 'Audiowide', sans-serif;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 40px 20px;
+        box-sizing: border-box;
+        min-height: 100vh;
+        margin: 0;
+    }
+
+    ::-webkit-scrollbar{
+        width: 10px;
+    }
+    ::-webkit-scrollbar-track{
+        background: #1e293b;
+    }
+    ::-webkit-scrollbar-thumb{
+        background: linear-gradient(180deg, #87CEEB, #ADD8E6);
+        border-radius: 5px;
+    }
+    ::-webkit-scrollbar-thumb:hover{
+        background: linear-gradient(180deg, #ADD8E6, #87CEEB);
+    }
+
+    h1{
+        color: rgb(76, 169, 250);
+        text-shadow: 0 0 20px rgb(76, 169, 250);
+        margin-bottom: 10px;
+        font-size: 36px;
+    }
+    h2{
+        color: rgb(224, 207, 16);
+        text-shadow: 0 0 20px rgb(224, 207, 16);
+    }
+
+    #rainCanvas{
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+        pointer-events: none;
+    }
+
+    .back-home{
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        color: rgb(135, 206, 235);
+        text-decoration: none;
+        font-size: 14px;
+        text-shadow: 0 0 10px rgba(135, 206, 235, 0.5);
+        transition: all 0.3s ease;
+        padding: 8px 15px;
+        border: 1px solid rgba(135, 206, 235, 0.3);
+        border-radius: 50px;
+        background: rgba(15, 23, 42, 0.8);
+        z-index: 100;
+    }
+    .back-home:hover{
+        color: rgb(224, 207, 16);
+        border-color: rgb(224, 207, 16);
+        text-shadow: 0 0 15px rgba(224, 207, 16, 0.6);
+        box-shadow: 0 0 20px rgba(224, 207, 16, 0.3);
+    }
+
+    /* ========== 标签页切换 ========== */
+    .tabs{
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin: 30px auto 40px;
+        flex-wrap: wrap;
+    }
+    .tab-btn{
+        padding: 10px 24px;
+        font-size: 15px;
+        font-family: inherit;
+        font-weight: bold;
+        background: rgba(15, 23, 42, 0.8);
+        color: #94a3b8;
+        border: 1px solid rgba(135, 206, 235, 0.3);
+        border-radius: 50px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .tab-btn:hover{
+        color: #87CEEB;
+        border-color: rgba(135, 206, 235, 0.6);
+        box-shadow: 0 0 15px rgba(135, 206, 235, 0.2);
+    }
+    .tab-btn.active{
+        color: #0f172a;
+        background: linear-gradient(135deg, #87CEEB, #ADD8E6);
+        border-color: transparent;
+        box-shadow: 0 0 25px rgba(135, 206, 235, 0.5);
+    }
+
+    .tab-content{
+        display: none;
+        animation: fadeIn 0.4s ease;
+    }
+    .tab-content.active{
+        display: block;
+    }
+
+    /* ========== 实时时钟 ========== */
+    .clock-container{
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    .big-clock{
+        font-family: 'Orbitron', monospace;
+        font-size: clamp(48px, 12vw, 96px);
+        font-weight: 900;
+        color: #87CEEB;
+        text-shadow: 0 0 30px rgba(135, 206, 235, 0.6), 0 0 60px rgba(135, 206, 235, 0.3);
+        letter-spacing: 4px;
+        margin: 20px 0;
+    }
+    .clock-seconds{
+        font-size: 0.5em;
+        color: #ADD8E6;
+        opacity: 0.8;
+    }
+    .clock-date{
+        font-size: 18px;
+        color: #cbd5e1;
+        margin-top: 10px;
+    }
+    .clock-weekday{
+        font-size: 22px;
+        color: rgb(224, 207, 16);
+        text-shadow: 0 0 15px rgba(224, 207, 16, 0.4);
+        margin-top: 5px;
+    }
+
+    /* ========== 世界时钟 ========== */
+    .world-clocks{
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        max-width: 900px;
+        margin: 30px auto;
+    }
+    .world-clock-card{
+        background: rgba(30, 41, 59, 0.6);
+        border: 1px solid rgba(135, 206, 235, 0.3);
+        border-radius: 15px;
+        padding: 20px;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+    }
+    .world-clock-card:hover{
+        border-color: rgba(135, 206, 235, 0.6);
+        box-shadow: 0 0 25px rgba(135, 206, 235, 0.2);
+        transform: translateY(-3px);
+    }
+    .city-name{
+        font-size: 16px;
+        color: #94a3b8;
+        margin-bottom: 8px;
+    }
+    .city-time{
+        font-family: 'Orbitron', monospace;
+        font-size: 28px;
+        font-weight: 700;
+        color: #87CEEB;
+        text-shadow: 0 0 15px rgba(135, 206, 235, 0.4);
+    }
+    .city-date{
+        font-size: 12px;
+        color: #64748b;
+        margin-top: 5px;
+    }
+
+    /* ========== 倒计时 ========== */
+    .countdown-setup{
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin: 30px auto;
+        max-width: 500px;
+    }
+    .countdown-input{
+        padding: 12px 16px;
+        font-size: 15px;
+        font-family: inherit;
+        background: rgba(30, 41, 59, 0.8);
+        border: 2px solid rgba(135, 206, 235, 0.3);
+        border-radius: 50px;
+        color: #fff;
+        outline: none;
+        transition: all 0.3s ease;
+    }
+    .countdown-input:focus{
+        border-color: rgb(76, 169, 250);
+        box-shadow: 0 0 20px rgba(76, 169, 250, 0.3);
+    }
+    .countdown-input::placeholder{
+        color: #64748b;
+    }
+    .glow-button{
+        padding: 12px 28px;
+        font-size: 15px;
+        font-family: inherit;
+        font-weight: bold;
+        background: linear-gradient(135deg, #87CEEB, #ADD8E6);
+        color: #0f172a;
+        border: none;
+        border-radius: 50px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 0 20px rgba(135, 206, 235, 0.4);
+    }
+    .glow-button:hover{
+        transform: scale(1.05);
+        box-shadow: 0 0 30px rgba(135, 206, 235, 0.6);
+    }
+    .glow-button:active{
+        transform: scale(0.98);
+    }
+
+    .countdown-display{
+        display: none;
+        max-width: 600px;
+        margin: 30px auto;
+    }
+    .countdown-display.active{
+        display: block;
+    }
+    .countdown-title{
+        font-size: 20px;
+        color: #cbd5e1;
+        margin-bottom: 20px;
+    }
+    .countdown-timer{
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+    .countdown-unit{
+        background: rgba(30, 41, 59, 0.8);
+        border: 1px solid rgba(135, 206, 235, 0.3);
+        border-radius: 15px;
+        padding: 20px;
+        min-width: 100px;
+    }
+    .countdown-number{
+        font-family: 'Orbitron', monospace;
+        font-size: 40px;
+        font-weight: 900;
+        color: #87CEEB;
+        text-shadow: 0 0 20px rgba(135, 206, 235, 0.5);
+    }
+    .countdown-label{
+        font-size: 13px;
+        color: #64748b;
+        margin-top: 5px;
+    }
+
+    .preset-buttons{
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 15px;
+    }
+    .preset-btn{
+        padding: 8px 16px;
+        font-size: 13px;
+        font-family: inherit;
+        background: rgba(15, 23, 42, 0.8);
+        color: #94a3b8;
+        border: 1px solid rgba(135, 206, 235, 0.2);
+        border-radius: 50px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .preset-btn:hover{
+        color: #87CEEB;
+        border-color: rgba(135, 206, 235, 0.5);
+    }
+
+    /* ========== 秒表 ========== */
+    .stopwatch-display{
+        font-family: 'Orbitron', monospace;
+        font-size: clamp(48px, 10vw, 80px);
+        font-weight: 900;
+        color: #87CEEB;
+        text-shadow: 0 0 30px rgba(135, 206, 235, 0.6), 0 0 60px rgba(135, 206, 235, 0.3);
+        letter-spacing: 2px;
+        margin: 40px 0 30px;
+    }
+    .stopwatch-ms{
+        font-size: 0.4em;
+        color: #ADD8E6;
+        opacity: 0.7;
+    }
+    .stopwatch-controls{
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+    .lap-list{
+        max-width: 400px;
+        margin: 30px auto;
+        text-align: left;
+    }
+    .lap-item{
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 20px;
+        border-bottom: 1px solid rgba(135, 206, 235, 0.1);
+        font-family: 'Orbitron', monospace;
+        font-size: 16px;
+    }
+    .lap-number{
+        color: #64748b;
+    }
+    .lap-time{
+        color: #87CEEB;
+    }
+
+    @keyframes fadeIn{
+        from{ opacity: 0; transform: translateY(10px); }
+        to{ opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 600px){
+        h1{ font-size: 24px; }
+        .countdown-unit{ min-width: 70px; padding: 12px; }
+        .countdown-number{ font-size: 28px; }
+        .world-clocks{ grid-template-columns: 1fr 1fr; }
+    }
+</style>
+
+<body>
+    <canvas id="rainCanvas"></canvas>
+    <a href="/" class="back-home">← 返回首页</a>
+
+    <h1>⏰ 时光机</h1>
+    <h2>穿越时间的维度</h2>
+
+    <!-- 标签页 -->
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('clock')">🕐 实时时钟</button>
+        <button class="tab-btn" onclick="switchTab('world')">🌍 世界时钟</button>
+        <button class="tab-btn" onclick="switchTab('countdown')">⏳ 倒计时</button>
+        <button class="tab-btn" onclick="switchTab('stopwatch')">⏱️ 秒表</button>
+    </div>
+
+    <!-- 实时时钟 -->
+    <div class="tab-content active" id="tab-clock">
+        <div class="clock-container">
+            <div class="big-clock" id="bigClock">00:00<span class="clock-seconds">:00</span></div>
+            <div class="clock-date" id="clockDate"></div>
+            <div class="clock-weekday" id="clockWeekday"></div>
+        </div>
+    </div>
+
+    <!-- 世界时钟 -->
+    <div class="tab-content" id="tab-world">
+        <div class="world-clocks" id="worldClocks"></div>
+    </div>
+
+    <!-- 倒计时 -->
+    <div class="tab-content" id="tab-countdown">
+        <div class="countdown-setup">
+            <input type="text" class="countdown-input" id="countdownName" placeholder="事件名称（如：新年）" maxlength="20">
+            <input type="datetime-local" class="countdown-input" id="countdownTime">
+            <button class="glow-button" onclick="startCountdown()">开始</button>
+        </div>
+        <div class="preset-buttons">
+            <button class="preset-btn" onclick="setPreset('newyear')">🎉 新年</button>
+            <button class="preset-btn" onclick="setPreset('tomorrow')">🌅 明天</button>
+            <button class="preset-btn" onclick="setPreset('week')">📅 下周</button>
+            <button class="preset-btn" onclick="setPreset('month')">📆 下月</button>
+        </div>
+        <div class="countdown-display" id="countdownDisplay">
+            <div class="countdown-title" id="countdownTitle"></div>
+            <div class="countdown-timer" id="countdownTimer"></div>
+        </div>
+    </div>
+
+    <!-- 秒表 -->
+    <div class="tab-content" id="tab-stopwatch">
+        <div class="stopwatch-display" id="stopwatchDisplay">00:00:00<span class="stopwatch-ms">.00</span></div>
+        <div class="stopwatch-controls">
+            <button class="glow-button" id="swStartBtn" onclick="swStart()">▶ 开始</button>
+            <button class="glow-button" id="swLapBtn" onclick="swLap()" style="display:none; background: rgba(30, 41, 59, 0.8); color: #87CEEB; border: 1px solid rgba(135, 206, 235, 0.5);">🚩 记圈</button>
+            <button class="glow-button" id="swResetBtn" onclick="swReset()" style="display:none; background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.5);">↺ 重置</button>
+        </div>
+        <div class="lap-list" id="lapList"></div>
+    </div>
+
+<script>
+    // ========== 数字雨背景 ==========
+    const canvas = document.getElementById('rainCanvas');
+    const ctx = canvas.getContext('2d');
+    let drops = [];
+
+    function resizeCanvas(){
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+
+    function createRaindrops(){
+        drops = [];
+        for(let i = 0; i < 100; i++){
+            drops.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height * -1,
+                length: Math.random() * 25 + 20,
+                speed: Math.random() * 150 + 100,
+                opacity: Math.random() * 0.4 + 0.3
+            });
+        }
+    }
+
+    function updateRain(deltaTime){
+        const deltaSeconds = deltaTime / 1000;
+        for(const drop of drops){
+            drop.y += drop.speed * deltaSeconds;
+            if(drop.y > canvas.height + 20){
+                drop.y = -drop.length;
+                drop.x = Math.random() * canvas.width;
+            }
+        }
+    }
+
+    function drawRain(){
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = 'rgba(135, 206, 235, 0.5)';
+        ctx.lineWidth = 1;
+        for(const drop of drops){
+            ctx.globalAlpha = drop.opacity;
+            ctx.beginPath();
+            ctx.moveTo(drop.x, drop.y);
+            ctx.lineTo(drop.x, drop.y + drop.length);
+            ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+    }
+
+    let lastTime = 0;
+    function animateRain(time){
+        const deltaTime = time - lastTime;
+        lastTime = time;
+        updateRain(deltaTime);
+        drawRain();
+        requestAnimationFrame(animateRain);
+    }
+
+    window.addEventListener('resize', () => {
+        resizeCanvas();
+        createRaindrops();
+    });
+
+    resizeCanvas();
+    createRaindrops();
+    requestAnimationFrame(animateRain);
+
+    // ========== 标签页切换 ==========
+    function switchTab(tabName){
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+        event.target.classList.add('active');
+        document.getElementById('tab-' + tabName).classList.add('active');
+    }
+
+    // ========== 实时时钟 ==========
+    const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+
+    function updateClock(){
+        const now = new Date();
+        const h = String(now.getHours()).padStart(2, '0');
+        const m = String(now.getMinutes()).padStart(2, '0');
+        const s = String(now.getSeconds()).padStart(2, '0');
+        document.getElementById('bigClock').innerHTML = `${h}:${m}<span class="clock-seconds">:${s}</span>`;
+
+        const y = now.getFullYear();
+        const mo = String(now.getMonth() + 1).padStart(2, '0');
+        const d = String(now.getDate()).padStart(2, '0');
+        document.getElementById('clockDate').textContent = `${y}年${mo}月${d}日`;
+        document.getElementById('clockWeekday').textContent = weekdays[now.getDay()];
+    }
+
+    // ========== 世界时钟 ==========
+    const cities = [
+        { name: '北京', tz: 'Asia/Shanghai' },
+        { name: '东京', tz: 'Asia/Tokyo' },
+        { name: '伦敦', tz: 'Europe/London' },
+        { name: '纽约', tz: 'America/New_York' },
+        { name: '洛杉矶', tz: 'America/Los_Angeles' },
+        { name: '巴黎', tz: 'Europe/Paris' },
+        { name: '悉尼', tz: 'Australia/Sydney' },
+        { name: '迪拜', tz: 'Asia/Dubai' }
+    ];
+
+    function initWorldClocks(){
+        const container = document.getElementById('worldClocks');
+        container.innerHTML = cities.map((city, i) => `
+            <div class="world-clock-card">
+                <div class="city-name">${city.name}</div>
+                <div class="city-time" id="city-time-${i}">--:--</div>
+                <div class="city-date" id="city-date-${i}">----</div>
+            </div>
+        `).join('');
+    }
+
+    function updateWorldClocks(){
+        const now = new Date();
+        cities.forEach((city, i) => {
+            const timeStr = now.toLocaleTimeString('zh-CN', {
+                timeZone: city.tz,
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            });
+            const dateStr = now.toLocaleDateString('zh-CN', {
+                timeZone: city.tz,
+                month: '2-digit',
+                day: '2-digit'
+            });
+            document.getElementById(`city-time-${i}`).textContent = timeStr;
+            document.getElementById(`city-date-${i}`).textContent = dateStr;
+        });
+    }
+
+    // ========== 倒计时 ==========
+    let countdownInterval = null;
+
+    function setPreset(type){
+        const now = new Date();
+        let target = new Date();
+        if(type === 'newyear'){
+            target = new Date(now.getFullYear() + 1, 0, 1, 0, 0, 0);
+            document.getElementById('countdownName').value = '新年';
+        } else if(type === 'tomorrow'){
+            target = new Date(now);
+            target.setDate(target.getDate() + 1);
+            target.setHours(0, 0, 0, 0);
+            document.getElementById('countdownName').value = '明天';
+        } else if(type === 'week'){
+            target = new Date(now);
+            target.setDate(target.getDate() + 7);
+            target.setHours(0, 0, 0, 0);
+            document.getElementById('countdownName').value = '一周后';
+        } else if(type === 'month'){
+            target = new Date(now);
+            target.setMonth(target.getMonth() + 1);
+            target.setHours(0, 0, 0, 0);
+            document.getElementById('countdownName').value = '下个月';
+        }
+        const localISO = new Date(target.getTime() - target.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+        document.getElementById('countdownTime').value = localISO;
+        startCountdown();
+    }
+
+    function startCountdown(){
+        const name = document.getElementById('countdownName').value.trim() || '倒计时';
+        const time = document.getElementById('countdownTime').value;
+        if(!time){
+            alert('请选择目标时间');
+            return;
+        }
+        const target = new Date(time).getTime();
+
+        if(countdownInterval) clearInterval(countdownInterval);
+
+        document.getElementById('countdownDisplay').classList.add('active');
+        document.getElementById('countdownTitle').textContent = `距离 ${name} 还有`;
+
+        function update(){
+            const now = Date.now();
+            const diff = target - now;
+            if(diff <= 0){
+                document.getElementById('countdownTitle').textContent = `${name} 已到达！`;
+                document.getElementById('countdownTimer').innerHTML = '<div style="font-size: 48px; color: rgb(224, 207, 16); text-shadow: 0 0 20px rgba(224, 207, 16, 0.5);">🎉</div>';
+                clearInterval(countdownInterval);
+                return;
+            }
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const secs = Math.floor((diff % (1000 * 60)) / 1000);
+
+            document.getElementById('countdownTimer').innerHTML = `
+                <div class="countdown-unit">
+                    <div class="countdown-number">${String(days).padStart(2, '0')}</div>
+                    <div class="countdown-label">天</div>
+                </div>
+                <div class="countdown-unit">
+                    <div class="countdown-number">${String(hours).padStart(2, '0')}</div>
+                    <div class="countdown-label">时</div>
+                </div>
+                <div class="countdown-unit">
+                    <div class="countdown-number">${String(mins).padStart(2, '0')}</div>
+                    <div class="countdown-label">分</div>
+                </div>
+                <div class="countdown-unit">
+                    <div class="countdown-number">${String(secs).padStart(2, '0')}</div>
+                    <div class="countdown-label">秒</div>
+                </div>
+            `;
+        }
+        update();
+        countdownInterval = setInterval(update, 1000);
+    }
+
+    // ========== 秒表 ==========
+    let swStartTime = 0;
+    let swElapsedTime = 0;
+    let swTimerInterval = null;
+    let swRunning = false;
+    let swLaps = [];
+
+    function formatTime(ms){
+        const totalSec = Math.floor(ms / 1000);
+        const h = String(Math.floor(totalSec / 3600)).padStart(2, '0');
+        const m = String(Math.floor((totalSec % 3600) / 60)).padStart(2, '0');
+        const s = String(totalSec % 60).padStart(2, '0');
+        const cs = String(Math.floor((ms % 1000) / 10)).padStart(2, '0');
+        return `${h}:${m}:${s}<span class="stopwatch-ms">.${cs}</span>`;
+    }
+
+    function updateStopwatch(){
+        const elapsed = swElapsedTime + (swRunning ? (Date.now() - swStartTime) : 0);
+        document.getElementById('stopwatchDisplay').innerHTML = formatTime(elapsed);
+    }
+
+    function swStart(){
+        if(!swRunning){
+            swRunning = true;
+            swStartTime = Date.now();
+            swTimerInterval = setInterval(updateStopwatch, 10);
+            document.getElementById('swStartBtn').textContent = '⏸ 暂停';
+            document.getElementById('swLapBtn').style.display = 'inline-block';
+            document.getElementById('swResetBtn').style.display = 'inline-block';
+        } else {
+            swRunning = false;
+            swElapsedTime += Date.now() - swStartTime;
+            clearInterval(swTimerInterval);
+            document.getElementById('swStartBtn').textContent = '▶ 继续';
+        }
+    }
+
+    function swLap(){
+        if(!swRunning) return;
+        const elapsed = swElapsedTime + (Date.now() - swStartTime);
+        swLaps.push(elapsed);
+        const lapList = document.getElementById('lapList');
+        lapList.innerHTML = swLaps.map((lap, i) => `
+            <div class="lap-item">
+                <span class="lap-number">第 ${i + 1} 圈</span>
+                <span class="lap-time">${formatTime(lap).replace(/<[^>]+>/g, '')}</span>
+            </div>
+        `).join('');
+    }
+
+    function swReset(){
+        swRunning = false;
+        clearInterval(swTimerInterval);
+        swStartTime = 0;
+        swElapsedTime = 0;
+        swLaps = [];
+        document.getElementById('stopwatchDisplay').innerHTML = '00:00:00<span class="stopwatch-ms">.00</span>';
+        document.getElementById('lapList').innerHTML = '';
+        document.getElementById('swStartBtn').textContent = '▶ 开始';
+        document.getElementById('swLapBtn').style.display = 'none';
+        document.getElementById('swResetBtn').style.display = 'none';
+    }
+
+    // ========== 初始化 ==========
+    initWorldClocks();
+    updateClock();
+    updateWorldClocks();
+    setInterval(updateClock, 1000);
+    setInterval(updateWorldClocks, 1000);
+</script>
+</body>
+</html>
