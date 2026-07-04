@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Audiowide&family=Noto+Sans+SC:wght@400;700;900&display=swap" rel="stylesheet">
+    <title>图片画廊 - AP 工作室</title>
+</head>
+<style>
+    *{ margin: 0; padding: 0; box-sizing: border-box; }
+    body{
+        background-color: #0f172a;
+        font-family: 'Noto Sans SC', 'Orbitron', 'Audiowide', sans-serif;
+        min-height: 100vh;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+    ::-webkit-scrollbar{ width: 10px; }
+    ::-webkit-scrollbar-track{ background: #1e293b; }
+    ::-webkit-scrollbar-thumb{ background: linear-gradient(180deg, #87CEEB, #ADD8E6); border-radius: 5px; }
+
+    .navbar{
+        position: fixed; top: 0; left: 0; width: 100%; height: 60px;
+        background: linear-gradient(135deg, rgba(15,23,42,0.95), rgba(30,41,59,0.95));
+        backdrop-filter: blur(10px); display: flex; align-items: center;
+        justify-content: space-between; padding: 0 20px;
+        box-shadow: 0 2px 20px rgba(76,169,250,0.3); z-index: 9999;
+        border-bottom: 1px solid rgba(135,206,235,0.3);
+    }
+    .navbar-title{
+        color: rgb(135,206,235); font-size: 20px; font-weight: bold;
+        text-shadow: 0 0 10px rgba(135,206,235,0.5); letter-spacing: 2px;
+    }
+    .navbar-right{ display: flex; align-items: center; gap: 12px; }
+    .nav-btn{
+        padding: 8px 16px; font-size: 14px; font-weight: bold; font-family: inherit;
+        background: linear-gradient(135deg, #87CEEB, #ADD8E6); color: #0f172a;
+        border: none; border-radius: 20px; cursor: pointer; text-decoration: none;
+        box-shadow: 0 0 10px rgba(135,206,235,0.6);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .nav-btn:hover{ transform: scale(1.05); box-shadow: 0 0 20px rgba(135,206,235,0.8); }
+
+    .container{ max-width: 1200px; margin: 80px auto 40px; padding: 0 20px; }
+
+    h1{
+        color: rgb(76,169,250); text-shadow: 0 0 20px rgb(76,169,250);
+        text-align: center; margin-bottom: 10px; font-size: 36px;
+    }
+    h2{
+        color: rgb(224,207,16); text-shadow: 0 0 20px rgb(224,207,16);
+        text-align: center; margin-bottom: 30px; font-size: 18px;
+    }
+
+    /* 分类标签 */
+    .gallery-tabs{
+        display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;
+        margin-bottom: 30px;
+    }
+    .gallery-tab{
+        padding: 8px 20px; font-size: 14px; font-family: inherit; font-weight: bold;
+        background: rgba(15,23,42,0.8); color: #94a3b8;
+        border: 1px solid rgba(135,206,235,0.2); border-radius: 50px;
+        cursor: pointer; transition: all 0.3s ease;
+    }
+    .gallery-tab:hover{ color: #87CEEB; border-color: rgba(135,206,235,0.5); }
+    .gallery-tab.active{
+        color: #0f172a; background: linear-gradient(135deg, #87CEEB, #ADD8E6);
+        border-color: transparent; box-shadow: 0 0 15px rgba(135,206,235,0.3);
+    }
+
+    /* 图片网格 */
+    .gallery-grid{
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 20px;
+    }
+    .gallery-item{
+        position: relative;
+        border-radius: 15px;
+        overflow: hidden;
+        cursor: pointer;
+        aspect-ratio: 1;
+        background: rgba(30,41,59,0.6);
+        border: 1px solid rgba(135,206,235,0.2);
+        transition: all 0.3s ease;
+    }
+    .gallery-item:hover{
+        transform: scale(1.03);
+        border-color: rgba(135,206,235,0.6);
+        box-shadow: 0 0 25px rgba(135,206,235,0.3);
+    }
+    .gallery-item img{
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        transition: transform 0.3s ease;
+    }
+    .gallery-item:hover img{
+        transform: scale(1.1);
+    }
+    .gallery-item-overlay{
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 15px;
+        background: linear-gradient(transparent, rgba(0,0,0,0.8));
+        color: #fff;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    .gallery-item:hover .gallery-item-overlay{
+        opacity: 1;
+    }
+    .gallery-item-title{
+        font-size: 14px;
+        font-weight: bold;
+        margin-bottom: 4px;
+    }
+    .gallery-item-desc{
+        font-size: 12px;
+        color: #94a3b8;
+    }
+
+    /* 灯箱 */
+    .lightbox{
+        display: none;
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0,0,0,0.9);
+        z-index: 99999;
+        justify-content: center;
+        align-items: center;
+        animation: fadeIn 0.3s ease;
+    }
+    .lightbox.active{
+        display: flex;
+    }
+    .lightbox-img{
+        max-width: 90vw;
+        max-height: 85vh;
+        border-radius: 10px;
+        box-shadow: 0 0 50px rgba(135,206,235,0.3);
+        animation: scaleIn 0.3s ease;
+    }
+    .lightbox-close{
+        position: absolute;
+        top: 20px;
+        right: 30px;
+        color: #fff;
+        font-size: 40px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: none;
+        border: none;
+        line-height: 1;
+    }
+    .lightbox-close:hover{
+        color: #87CEEB;
+        transform: rotate(90deg);
+    }
+    .lightbox-prev, .lightbox-next{
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #fff;
+        font-size: 50px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: none;
+        border: none;
+        padding: 20px;
+        opacity: 0.6;
+    }
+    .lightbox-prev:hover, .lightbox-next:hover{
+        opacity: 1;
+        text-shadow: 0 0 20px rgba(135,206,235,0.8);
+    }
+    .lightbox-prev{ left: 20px; }
+    .lightbox-next{ right: 20px; }
+    .lightbox-info{
+        position: absolute;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: #fff;
+        font-size: 16px;
+        text-align: center;
+        background: rgba(0,0,0,0.6);
+        padding: 10px 20px;
+        border-radius: 10px;
+        backdrop-filter: blur(5px);
+    }
+
+    @keyframes fadeIn{
+        from{ opacity: 0; }
+        to{ opacity: 1; }
+    }
+    @keyframes scaleIn{
+        from{ transform: scale(0.8); opacity: 0; }
+        to{ transform: scale(1); opacity: 1; }
+    }
+
+    @media (max-width: 768px){
+        h1{ font-size: 24px; }
+        .gallery-grid{ grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+        .lightbox-prev{ left: 5px; font-size: 30px; }
+        .lightbox-next{ right: 5px; font-size: 30px; }
+    }
+</style>
+<body>
+    <div class="navbar">
+        <div class="navbar-title">📸 图片画廊</div>
+        <div class="navbar-right">
+            <a href="/" class="nav-btn">🏠 主页</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <h1>📸 图片画廊</h1>
+        <h2>用图片记录美好瞬间</h2>
+
+        <div class="gallery-tabs" id="galleryTabs"></div>
+        <div class="gallery-grid" id="galleryGrid"></div>
+    </div>
+
+    <!-- 灯箱 -->
+    <div class="lightbox" id="lightbox" onclick="closeLightboxOutside(event)">
+        <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
+        <button class="lightbox-prev" onclick="prevImage()">‹</button>
+        <button class="lightbox-next" onclick="nextImage()">›</button>
+        <img class="lightbox-img" id="lightboxImg" src="" alt="">
+        <div class="lightbox-info" id="lightboxInfo"></div>
+    </div>
+
+<script>
+    // ========== 图片数据 ==========
+    const categories = [
+        { id: 'all', name: '🌟 全部' },
+        { id: 'nature', name: '🌿 自然' },
+        { id: 'city', name: '🏙️ 城市' },
+        { id: 'space', name: '🚀 太空' },
+        { id: 'tech', name: '💻 科技' },
+        { id: 'art', name: '🎨 艺术' }
+    ];
+
+    // 使用 picsum.photos 作为示例图片（每次刷新随机）
+    const images = [];
+    const totalImages = 30;
+
+    // 生成图片数据
+    function generateImages(){
+        const categoriesList = ['nature', 'city', 'space', 'tech', 'art'];
+        const titles = {
+            nature: ['森林晨曦', '山间溪流', '日落海滩', '星空草原', '秋叶纷飞', '雪山之巅', '雨后彩虹', '花海漫步'],
+            city: ['都市夜景', '摩天大楼', '老街巷弄', '霓虹灯海', '城市天际线', '地铁穿梭', '雨中街景', '繁华商圈'],
+            space: ['银河系', '星云之谜', '月球表面', '土星环', '流星雨', '极光之舞', '深空探索', '太阳耀斑'],
+            tech: ['电路板', '数据中心', '代码海洋', '机器人', 'VR世界', '量子计算', '光纤网络', '芯片微距'],
+            art: ['抽象画作', '水墨丹青', '街头涂鸦', '光影艺术', '雕塑之美', '数字艺术', '色彩碰撞', '极简设计']
+        };
+        const seed = Date.now();
+        for(let i = 0; i < totalImages; i++){
+            const cat = categoriesList[i % categoriesList.length];
+            const titleList = titles[cat];
+            const idx = Math.floor(i / categoriesList.length) % titleList.length;
+            // 使用 picsum.photos 生成随机图片，用 seed+i 保证每次刷新不同
+            const imgId = (seed % 1000) + i;
+            images.push({
+                id: i,
+                title: titleList[idx],
+                desc: `一张美丽的${cat === 'nature' ? '自然' : cat === 'city' ? '城市' : cat === 'space' ? '太空' : cat === 'tech' ? '科技' : '艺术'}风格图片`,
+                url: `https://picsum.photos/seed/${imgId}/400/400`,
+                fullUrl: `https://picsum.photos/seed/${imgId}/1200/1200`,
+                cat: cat
+            });
+        }
+    }
+    generateImages();
+
+    let currentCategory = 'all';
+    let currentIndex = 0;
+    let filteredImages = [...images];
+
+    // ========== 渲染分类 ==========
+    function renderCategories(){
+        const container = document.getElementById('galleryTabs');
+        container.innerHTML = categories.map(cat => `
+            <button class="gallery-tab ${cat.id === currentCategory ? 'active' : ''}" onclick="setCategory('${cat.id}')">${cat.name}</button>
+        `).join('');
+    }
+
+    function setCategory(catId){
+        currentCategory = catId;
+        renderCategories();
+        renderGallery();
+    }
+
+    // ========== 渲染画廊 ==========
+    function renderGallery(){
+        if(currentCategory === 'all'){
+            filteredImages = [...images];
+        } else {
+            filteredImages = images.filter(img => img.cat === currentCategory);
+        }
+
+        const grid = document.getElementById('galleryGrid');
+        grid.innerHTML = filteredImages.map((img, i) => `
+            <div class="gallery-item" onclick="openLightbox(${i})">
+                <img src="${img.url}" alt="${img.title}" loading="lazy">
+                <div class="gallery-item-overlay">
+                    <div class="gallery-item-title">${img.title}</div>
+                    <div class="gallery-item-desc">${img.desc}</div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // ========== 灯箱 ==========
+    function openLightbox(index){
+        currentIndex = index;
+        const img = filteredImages[index];
+        document.getElementById('lightboxImg').src = img.fullUrl;
+        document.getElementById('lightboxInfo').textContent = `${img.title} (${index + 1}/${filteredImages.length})`;
+        document.getElementById('lightbox').classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeLightbox(){
+        document.getElementById('lightbox').classList.remove('active');
+        document.body.style.overflow = 'auto';
+    }
+
+    function closeLightboxOutside(e){
+        if(e.target.id === 'lightbox') closeLightbox();
+    }
+
+    function prevImage(){
+        currentIndex = (currentIndex - 1 + filteredImages.length) % filteredImages.length;
+        const img = filteredImages[currentIndex];
+        document.getElementById('lightboxImg').src = img.fullUrl;
+        document.getElementById('lightboxInfo').textContent = `${img.title} (${currentIndex + 1}/${filteredImages.length})`;
+    }
+
+    function nextImage(){
+        currentIndex = (currentIndex + 1) % filteredImages.length;
+        const img = filteredImages[currentIndex];
+        document.getElementById('lightboxImg').src = img.fullUrl;
+        document.getElementById('lightboxInfo').textContent = `${img.title} (${currentIndex + 1}/${filteredImages.length})`;
+    }
+
+    // 键盘控制
+    document.addEventListener('keydown', function(e){
+        const lb = document.getElementById('lightbox');
+        if(!lb.classList.contains('active')) return;
+        if(e.key === 'Escape') closeLightbox();
+        if(e.key === 'ArrowLeft') prevImage();
+        if(e.key === 'ArrowRight') nextImage();
+    });
+
+    // ========== 初始化 ==========
+    renderCategories();
+    renderGallery();
+</script>
+</body>
+</html>

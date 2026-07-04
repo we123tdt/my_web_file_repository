@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Audiowide&family=Noto+Sans+SC:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <title>访问统计 - AP 工作室</title>
+</head>
+<style>
+    *{ margin: 0; padding: 0; box-sizing: border-box; }
+    body{
+        background-color: #0f172a;
+        font-family: 'Noto Sans SC', 'Orbitron', 'Audiowide', sans-serif;
+        min-height: 100vh;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+    ::-webkit-scrollbar{ width: 10px; }
+    ::-webkit-scrollbar-track{ background: #1e293b; }
+    ::-webkit-scrollbar-thumb{ background: linear-gradient(180deg, #87CEEB, #ADD8E6); border-radius: 5px; }
+
+    .navbar{
+        position: fixed; top: 0; left: 0; width: 100%; height: 60px;
+        background: linear-gradient(135deg, rgba(15,23,42,0.95), rgba(30,41,59,0.95));
+        backdrop-filter: blur(10px); display: flex; align-items: center;
+        justify-content: space-between; padding: 0 20px;
+        box-shadow: 0 2px 20px rgba(76,169,250,0.3); z-index: 9999;
+        border-bottom: 1px solid rgba(135,206,235,0.3);
+    }
+    .navbar-title{
+        color: rgb(135,206,235); font-size: 20px; font-weight: bold;
+        text-shadow: 0 0 10px rgba(135,206,235,0.5); letter-spacing: 2px;
+    }
+    .navbar-right{ display: flex; align-items: center; gap: 12px; }
+    .nav-btn{
+        padding: 8px 16px; font-size: 14px; font-weight: bold; font-family: inherit;
+        background: linear-gradient(135deg, #87CEEB, #ADD8E6); color: #0f172a;
+        border: none; border-radius: 20px; cursor: pointer; text-decoration: none;
+        box-shadow: 0 0 10px rgba(135,206,235,0.6);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .nav-btn:hover{ transform: scale(1.05); box-shadow: 0 0 20px rgba(135,206,235,0.8); }
+
+    .container{ max-width: 1000px; margin: 80px auto 40px; padding: 0 20px; }
+
+    h1{
+        color: rgb(76,169,250); text-shadow: 0 0 20px rgb(76,169,250);
+        text-align: center; margin-bottom: 10px; font-size: 36px;
+    }
+    h2{
+        color: rgb(224,207,16); text-shadow: 0 0 20px rgb(224,207,16);
+        text-align: center; margin-bottom: 30px; font-size: 18px;
+    }
+
+    /* 统计卡片 */
+    .stats-grid{
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 40px;
+    }
+    .stat-card{
+        background: linear-gradient(135deg, rgba(30,41,59,0.9), rgba(15,23,42,0.9));
+        border: 1px solid rgba(135,206,235,0.3);
+        border-radius: 15px;
+        padding: 25px;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+    .stat-card:hover{
+        border-color: rgba(135,206,235,0.6);
+        box-shadow: 0 0 25px rgba(135,206,235,0.2);
+        transform: translateY(-3px);
+    }
+    .stat-icon{
+        font-size: 36px;
+        margin-bottom: 10px;
+    }
+    .stat-label{
+        color: #64748b;
+        font-size: 13px;
+        margin-bottom: 8px;
+        letter-spacing: 1px;
+    }
+    .stat-value{
+        color: #87CEEB;
+        font-size: 32px;
+        font-weight: bold;
+        font-family: 'Orbitron', monospace;
+        text-shadow: 0 0 15px rgba(135,206,235,0.5);
+    }
+    .stat-sub{
+        color: #475569;
+        font-size: 12px;
+        margin-top: 5px;
+    }
+
+    /* 图表容器 */
+    .chart-container{
+        background: linear-gradient(135deg, rgba(30,41,59,0.9), rgba(15,23,42,0.9));
+        border: 1px solid rgba(135,206,235,0.3);
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 30px;
+    }
+    .chart-title{
+        color: #94a3b8;
+        font-size: 16px;
+        margin-bottom: 20px;
+        text-align: center;
+        letter-spacing: 2px;
+    }
+    .chart-wrapper{
+        position: relative;
+        height: 300px;
+    }
+
+    /* 访客列表 */
+    .recent-section{
+        background: linear-gradient(135deg, rgba(30,41,59,0.9), rgba(15,23,42,0.9));
+        border: 1px solid rgba(135,206,235,0.3);
+        border-radius: 15px;
+        padding: 25px;
+    }
+    .recent-title{
+        color: #94a3b8;
+        font-size: 16px;
+        margin-bottom: 15px;
+        letter-spacing: 2px;
+    }
+    .recent-item{
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px solid rgba(135,206,235,0.1);
+        font-size: 14px;
+    }
+    .recent-item:last-child{ border-bottom: none; }
+    .recent-page{ color: #cbd5e1; }
+    .recent-time{ color: #475569; font-size: 12px; font-family: 'Courier New', monospace; }
+
+    .empty-state{
+        text-align: center;
+        padding: 40px;
+        color: #475569;
+    }
+    .empty-state .icon{ font-size: 48px; margin-bottom: 15px; }
+
+    @media (max-width: 600px){
+        h1{ font-size: 24px; }
+        .stats-grid{ grid-template-columns: 1fr 1fr; }
+        .stat-value{ font-size: 24px; }
+    }
+</style>
+<body>
+    <div class="navbar">
+        <div class="navbar-title">📊 访问统计</div>
+        <div class="navbar-right">
+            <a href="/" class="nav-btn">🏠 主页</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <h1>📊 访问统计</h1>
+        <h2>了解你的访客</h2>
+
+        <!-- 统计卡片 -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">👥</div>
+                <div class="stat-label">总访客</div>
+                <div class="stat-value" id="totalVisitors">--</div>
+                <div class="stat-sub">累计访问人数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🟢</div>
+                <div class="stat-label">当前在线</div>
+                <div class="stat-value" id="onlineNow">--</div>
+                <div class="stat-sub">最近 30 秒活跃</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📝</div>
+                <div class="stat-label">留言总数</div>
+                <div class="stat-value" id="totalMessages">--</div>
+                <div class="stat-sub">来自访客的留言</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📅</div>
+                <div class="stat-label">今日访问</div>
+                <div class="stat-value" id="todayVisits">--</div>
+                <div class="stat-sub">本日累计</div>
+            </div>
+        </div>
+
+        <!-- 访问趋势图 -->
+        <div class="chart-container">
+            <div class="chart-title">📈 访问趋势（模拟数据）</div>
+            <div class="chart-wrapper">
+                <canvas id="visitChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 页面分布图 -->
+        <div class="chart-container">
+            <div class="chart-title">📊 页面访问分布（模拟数据）</div>
+            <div class="chart-wrapper">
+                <canvas id="pageChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 最近访问 -->
+        <div class="recent-section">
+            <div class="recent-title">🕐 最近访问记录</div>
+            <div id="recentVisits">
+                <div class="empty-state">
+                    <div class="icon">📡</div>
+                    <p>等待访问数据...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // ========== 获取统计数据 ==========
+    async function loadStats(){
+        try {
+            // 获取访客数
+            const visitorRes = await fetch('/api/visitor', { cache: 'no-store' });
+            const visitorData = await visitorRes.json();
+            document.getElementById('totalVisitors').textContent = visitorData.count?.toLocaleString() || '--';
+
+            // 获取在线人数
+            const onlineRes = await fetch('/api/online-users', { cache: 'no-store' });
+            const onlineData = await onlineRes.json();
+            document.getElementById('onlineNow').textContent = onlineData.count || '1';
+
+            // 获取留言数
+            const msgRes = await fetch('/api/messages', { cache: 'no-store' });
+            const msgData = await msgRes.json();
+            document.getElementById('totalMessages').textContent = msgData.messages?.length || '0';
+
+            // 今日访问（从 localStorage 模拟）
+            const today = new Date().toDateString();
+            const todayData = JSON.parse(localStorage.getItem('todayVisits') || '{"date":"","count":0}');
+            if(todayData.date !== today){
+                todayData.date = today;
+                todayData.count = 1;
+            } else {
+                todayData.count++;
+            }
+            localStorage.setItem('todayVisits', JSON.stringify(todayData));
+            document.getElementById('todayVisits').textContent = todayData.count;
+
+        } catch(e){
+            // 使用 localStorage 数据
+            const stored = localStorage.getItem('visitorCount');
+            document.getElementById('totalVisitors').textContent = stored || '0';
+            document.getElementById('onlineNow').textContent = '1';
+            document.getElementById('totalMessages').textContent = '--';
+            document.getElementById('todayVisits').textContent = '--';
+        }
+    }
+
+    // ========== 生成模拟访问数据 ==========
+    function generateVisitData(){
+        const days = [];
+        const visits = [];
+        const now = new Date();
+        for(let i = 14; i >= 0; i--){
+            const d = new Date(now);
+            d.setDate(d.getDate() - i);
+            days.push(`${d.getMonth()+1}/${d.getDate()}`);
+            visits.push(Math.floor(Math.random() * 30) + 5);
+        }
+        return { days, visits };
+    }
+
+    // ========== 访问趋势图 ==========
+    function initVisitChart(){
+        const data = generateVisitData();
+        const ctx = document.getElementById('visitChart').getContext('2d');
+
+        const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+        gradient.addColorStop(0, 'rgba(135, 206, 235, 0.3)');
+        gradient.addColorStop(1, 'rgba(135, 206, 235, 0)');
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.days,
+                datasets: [{
+                    label: '访问量',
+                    data: data.visits,
+                    borderColor: '#87CEEB',
+                    backgroundColor: gradient,
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#87CEEB',
+                    pointBorderColor: '#0f172a',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: {
+                        grid: { color: 'rgba(135, 206, 235, 0.1)' },
+                        ticks: { color: '#64748b', font: { size: 11 } }
+                    },
+                    y: {
+                        grid: { color: 'rgba(135, 206, 235, 0.1)' },
+                        ticks: { color: '#64748b', font: { size: 11 }, stepSize: 10 },
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    // ========== 页面分布图 ==========
+    function initPageChart(){
+        const ctx = document.getElementById('pageChart').getContext('2d');
+
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['主页', '导航', '画廊', '游戏', 'AI 聊天', '时光机', '天气', '留言板', '统计'],
+                datasets: [{
+                    data: [
+                        Math.floor(Math.random() * 50 + 30),
+                        Math.floor(Math.random() * 30 + 15),
+                        Math.floor(Math.random() * 20 + 10),
+                        Math.floor(Math.random() * 25 + 10),
+                        Math.floor(Math.random() * 15 + 5),
+                        Math.floor(Math.random() * 20 + 10),
+                        Math.floor(Math.random() * 20 + 10),
+                        Math.floor(Math.random() * 15 + 5),
+                        Math.floor(Math.random() * 10 + 3)
+                    ],
+                    backgroundColor: [
+                        '#87CEEB', '#60a5fa', '#4ade80', '#fbbf24',
+                        '#a78bfa', '#f472b6', '#2dd4bf', '#f87171', '#94a3b8'
+                    ],
+                    borderColor: '#0f172a',
+                    borderWidth: 2,
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            color: '#94a3b8',
+                            font: { size: 12 },
+                            padding: 15
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // ========== 最近访问记录 ==========
+    function loadRecentVisits(){
+        const container = document.getElementById('recentVisits');
+
+        // 从 localStorage 获取访问记录
+        let records = [];
+        try {
+            const saved = localStorage.getItem('visitRecords');
+            if(saved) records = JSON.parse(saved);
+        } catch(e) {}
+
+        // 添加当前访问
+        const now = new Date();
+        const pages = ['/', '/links/', '/gallery/', '/games/', '/chat/', '/time/', '/weather/', '/messages/', '/stats/'];
+        const pageNames = ['主页', '导航', '画廊', '游戏', 'AI 聊天', '时光机', '天气', '留言板', '统计'];
+        const currentPath = window.location.pathname;
+
+        records.unshift({
+            page: currentPath,
+            pageName: pageNames[pages.indexOf(currentPath)] || '未知',
+            time: now.toISOString()
+        });
+
+        // 保留最近 20 条
+        if(records.length > 20) records = records.slice(0, 20);
+        localStorage.setItem('visitRecords', JSON.stringify(records));
+
+        if(records.length === 0){
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="icon">📡</div>
+                    <p>还没有访问记录</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = records.map(r => {
+            const d = new Date(r.time);
+            const timeStr = `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
+            return `
+                <div class="recent-item">
+                    <span class="recent-page">${r.pageName || r.page}</span>
+                    <span class="recent-time">${timeStr}</span>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // ========== 初始化 ==========
+    loadStats();
+    initVisitChart();
+    initPageChart();
+    loadRecentVisits();
+
+    // 每 30 秒刷新统计数据
+    setInterval(loadStats, 30000);
+</script>
+</body>
+</html>
