@@ -88,13 +88,6 @@
     img:active{
         transform: scale(0.95);
     }
-    .avatar-hint{
-        margin-top: 15px;
-        color: #94a3b8;
-        font-size: 14px;
-        opacity: 0.7;
-        letter-spacing: 2px;
-    }
     @media (max-width: 768px){
         img{
             max-width: 80vw;
@@ -416,9 +409,7 @@
 <div class="navbar">
     <div class="navbar-title">AP 主页</div>
     <div class="navbar-right">
-        <a href="files.html" class="download-button">📁 文件</a>
         <a href="weather/" class="download-button">🌤️ 天气</a>
-        <button class="download-button" onclick="downloadLatest()">📥 下载</button>
         <div class="navbar-time" id="navbarTime"></div>
     </div>
 </div>
@@ -428,8 +419,7 @@
 <canvas id="rainCanvas"></canvas>
 <div class="avatar-wrapper">
     <div class="typewriter-text" id="typewriter"></div>
-    <img src="head.png" width="300" onclick="hackerAttack()" ondblclick="openUploadPage()" alt="点击触发特效">
-    <div class="avatar-hint">双击头像打开文件管理</div>
+    <img src="head.png" width="300" onclick="hackerAttack()" alt="点击触发特效">
 </div>
 
 
@@ -651,10 +641,6 @@
         }
     }
 
-    function openUploadPage(){
-        window.location.href = 'upload.html';
-    }
-
     document.addEventListener('keydown', function(event){
         if(event.key === 'Escape'){
             closeModal();
@@ -750,58 +736,4 @@
 
     updateTime();
     setInterval(updateTime, 1000);
-
-    async function downloadLatest(){
-        const button = document.querySelector('.download-button');
-        const originalText = button.textContent;
-        button.textContent = '⏳ Loading...';
-        button.disabled = true;
-
-        try {
-            let downloadUrl = '/files/web.zip';
-            let fileName = 'web.zip';
-
-            const latestResponse = await fetch('/api/latest-file', { cache: 'no-store' });
-            if (latestResponse.ok) {
-                const latestData = await latestResponse.json();
-                if (latestData.success && latestData.latest) {
-                    downloadUrl = latestData.latest.url;
-                    fileName = latestData.latest.name;
-                } else if (latestData.fallbackUrl) {
-                    downloadUrl = latestData.fallbackUrl;
-                }
-            }
-
-            if (downloadUrl.startsWith('http://') || downloadUrl.startsWith('https://')) {
-                window.open(downloadUrl, '_blank');
-            } else {
-                if (downloadUrl.includes('?')) {
-                    downloadUrl += `&timestamp=${Date.now()}`;
-                } else {
-                    downloadUrl += `?timestamp=${Date.now()}`;
-                }
-
-                const response = await fetch(downloadUrl, { cache: 'no-store' });
-                
-                if (!response.ok) {
-                    throw new Error('File not found');
-                }
-
-                const blob = await response.blob();
-                const blobUrl = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = blobUrl;
-                a.download = fileName;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(blobUrl);
-            }
-        } catch (error) {
-            alert('下载失败: ' + error.message);
-        } finally {
-            button.textContent = originalText;
-            button.disabled = false;
-        }
-    }
 </script>
