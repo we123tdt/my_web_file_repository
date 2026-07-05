@@ -432,8 +432,7 @@
         { name: 'Steam', desc: '游戏平台', url: 'https://store.steampowered.com', icon: '🎮', cat: 'game' },
         { name: 'Epic Games', desc: '游戏商城', url: 'https://store.epicgames.com', icon: '🎮', cat: 'game' },
         { name: 'itch.io', desc: '独立游戏平台', url: 'https://itch.io', icon: '🕹️', cat: 'game' },
-        { name: 'GOG', desc: 'DRM-free 游戏', url: 'https://www.gog.com', icon: '🎮', cat: 'game' },
-        { name: 'Poki', desc: 'Poki中文' , url: 'https://poki.com/zh', icon: '🎮', cat: 'game' },
+        { name: 'GOG', desc: 'DRM-free 游戏', url: 'https://www.gog.com', icon: '🎮', cat: 'game' }
     ];
 
     let currentCategory = 'all';
@@ -495,6 +494,20 @@
     // ========== 初始化 ==========
     renderCategories();
     renderLinks();
+
+    // 访问统计追踪
+    (function trackVisit(){
+        try {
+            fetch('/api/stats', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    page: '/links/',
+                    pageName: '链接'
+                })
+            }).catch(()=>{});
+        } catch(e) {}
+    })();
 </script>
 </body>
 </html>
