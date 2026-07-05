@@ -34,6 +34,52 @@ export async function onRequest(context) {
             });
         }
 
+        // ===== DELETE: 删除留言（需登录） =====
+        if (request.method === 'DELETE') {
+            const authHeader = request.headers.get('Authorization') || '';
+            const token = authHeader.replace('Bearer ', '');
+            // 验证 token（简单内联验证，避免循环依赖）
+            let isAuthed = false;
+            if (token) {
+                const sessionData = await env.VISITOR_KV.get(`session_${token}`);
+                if (sessionData) {
+                    try {
+                        const session = JSON.parse(sessionData);
+                        if (session.expires > Date.now()) isAuthed = true;
+                    } catch (e) {}
+                }
+            }
+            if (!isAuthed) {
+                return new Response(JSON.stringify({ success: false, error: '请先登录' }), {
+                    status: 401,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+            const url = new URL(request.url);
+            const msgId = url.searchParams.get('id');
+            if (!msgId) {
+                return new Response(JSON.stringify({ success: false, error: '缺少消息ID' }), {
+                    status: 400,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+            const stored = await env.VISITOR_KV.get('messages');
+            let messages = [];
+            if (stored) { try { messages = JSON.parse(stored); } catch (e) {} }
+            const before = messages.length;
+            messages = messages.filter(m => m.id !== msgId);
+            if (messages.length === before) {
+                return new Response(JSON.stringify({ success: false, error: '留言不存在' }), {
+                    status: 404,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+            await env.VISITOR_KV.put('messages', JSON.stringify(messages));
+            return new Response(JSON.stringify({ success: true }), {
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+
         if (request.method === 'POST') {
             const body = await request.json();
             const { nickname, content } = body;
