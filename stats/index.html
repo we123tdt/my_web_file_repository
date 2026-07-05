@@ -233,6 +233,7 @@
         '/weather/': '天气',
         '/messages/': '留言板',
         '/stats/': '统计',
+        '/music/': '音乐',
         '/files.html': '文件',
         '/upload.html': '上传'
     };
@@ -261,170 +262,182 @@
 
     // ========== 获取统计数据并更新所有UI ==========
     async function loadAllStats() {
-        try {
-            const [visitorRes, onlineRes, msgRes, statsRes] = await Promise.all([
-                fetch('/api/visitor', { cache: 'no-store' }),
-                fetch('/api/online-users', { cache: 'no-store' }),
-                fetch('/api/messages', { cache: 'no-store' }),
-                fetch('/api/stats', { cache: 'no-store' })
-            ]);
-
-            const visitorData = await visitorRes.json();
-            const onlineData = await onlineRes.json();
-            const msgData = await msgRes.json();
-            const statsData = await statsRes.json();
-
-            // 更新卡片
-            document.getElementById('totalVisitors').textContent = visitorData.count?.toLocaleString() || '0';
-            document.getElementById('onlineNow').textContent = onlineData.count || '0';
-            document.getElementById('totalMessages').textContent = msgData.messages?.length || '0';
-            document.getElementById('todayVisits').textContent = statsData.todayVisits || '0';
-
-            // 更新图表
-            updateVisitChart(statsData.dailyVisits || {});
-            updatePageChart(statsData.pageVisits || {});
-            updateRecentVisits(statsData.recentVisits || []);
-
-        } catch (e) {
-            document.getElementById('totalVisitors').textContent = '--';
-            document.getElementById('onlineNow').textContent = '--';
-            document.getElementById('totalMessages').textContent = '--';
-            document.getElementById('todayVisits').textContent = '--';
+        // 独立请求每个 API，一个失败不影响其他
+        async function safeFetch(url, fallback) {
+            try {
+                const res = await fetch(url, { cache: 'no-store' });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                return await res.json();
+            } catch (e) {
+                console.warn('API ' + url + ' 请求失败:', e.message);
+                return fallback;
+            }
         }
+
+        const [visitorData, onlineData, msgData, statsData] = await Promise.all([
+            safeFetch('/api/visitor', { count: 0 }),
+            safeFetch('/api/online-users', { count: 0 }),
+            safeFetch('/api/messages', { messages: [] }),
+            safeFetch('/api/stats', { dailyVisits: {}, pageVisits: {}, recentVisits: [], todayVisits: 0 })
+        ]);
+
+        // 更新卡片
+        document.getElementById('totalVisitors').textContent = (visitorData.count || 0).toLocaleString();
+        document.getElementById('onlineNow').textContent = onlineData.count || '0';
+        document.getElementById('totalMessages').textContent = (msgData.messages || []).length || '0';
+        document.getElementById('todayVisits').textContent = statsData.todayVisits || '0';
+
+        // 更新图表
+        updateVisitChart(statsData.dailyVisits || {});
+        updatePageChart(statsData.pageVisits || {});
+        updateRecentVisits(statsData.recentVisits || []);
     }
 
     // ========== 更新访问趋势图 ==========
     function updateVisitChart(dailyVisits) {
-        const ctx = document.getElementById('visitChart').getContext('2d');
+        try {
+            const canvas = document.getElementById('visitChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
 
-        // 生成最近 15 天的标签和数据
-        const days = [];
-        const visits = [];
-        const now = new Date();
-        for (let i = 14; i >= 0; i--) {
-            const d = new Date(now);
-            d.setDate(d.getDate() - i);
-            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-            days.push(`${d.getMonth() + 1}/${d.getDate()}`);
-            visits.push(dailyVisits[key] || 0);
-        }
+            // 生成最近 15 天的标签和数据
+            const days = [];
+            const visits = [];
+            const now = new Date();
+            const raw = dailyVisits && typeof dailyVisits === 'object' ? dailyVisits : {};
+            for (let i = 14; i >= 0; i--) {
+                const d = new Date(now);
+                d.setDate(d.getDate() - i);
+                const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                days.push(`${d.getMonth() + 1}/${d.getDate()}`);
+                visits.push(raw[key] || 0);
+            }
 
-        // 如果所有数据都是0，说明刚部署还没数据，显示提示
-        const hasData = visits.some(v => v > 0);
+            const hasData = visits.some(v => v > 0);
 
-        if (visitChart) visitChart.destroy();
+            if (visitChart) visitChart.destroy();
 
-        const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-        gradient.addColorStop(0, 'rgba(135, 206, 235, 0.3)');
-        gradient.addColorStop(1, 'rgba(135, 206, 235, 0)');
+            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+            gradient.addColorStop(0, 'rgba(135, 206, 235, 0.3)');
+            gradient.addColorStop(1, 'rgba(135, 206, 235, 0)');
 
-        visitChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: days,
-                datasets: [{
-                    label: '访问量',
-                    data: visits,
-                    borderColor: '#87CEEB',
-                    backgroundColor: gradient,
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.4,
-                    pointBackgroundColor: '#87CEEB',
-                    pointBorderColor: '#0f172a',
-                    pointBorderWidth: 2,
-                    pointRadius: 4,
-                    pointHoverRadius: 6
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            label: ctx => hasData ? `${ctx.parsed.y} 次访问` : '暂无数据'
+            visitChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: days,
+                    datasets: [{
+                        label: '访问量',
+                        data: visits,
+                        borderColor: '#87CEEB',
+                        backgroundColor: gradient,
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#87CEEB',
+                        pointBorderColor: '#0f172a',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => hasData ? `${ctx.parsed.y} 次访问` : '暂无数据'
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(135, 206, 235, 0.1)' },
+                            ticks: { color: '#64748b', font: { size: 11 } }
+                        },
+                        y: {
+                            grid: { color: 'rgba(135, 206, 235, 0.1)' },
+                            ticks: {
+                                color: '#64748b',
+                                font: { size: 11 },
+                                stepSize: hasData ? undefined : 1,
+                                precision: 0
+                            },
+                            beginAtZero: true
                         }
                     }
-                },
-                scales: {
-                    x: {
-                        grid: { color: 'rgba(135, 206, 235, 0.1)' },
-                        ticks: { color: '#64748b', font: { size: 11 } }
-                    },
-                    y: {
-                        grid: { color: 'rgba(135, 206, 235, 0.1)' },
-                        ticks: {
-                            color: '#64748b',
-                            font: { size: 11 },
-                            stepSize: hasData ? undefined : 1,
-                            precision: 0
-                        },
-                        beginAtZero: true
-                    }
                 }
-            }
-        });
+            });
+        } catch (e) {
+            console.warn('访问趋势图渲染失败:', e.message);
+        }
     }
 
     // ========== 更新页面分布图 ==========
     function updatePageChart(pageVisits) {
-        const ctx = document.getElementById('pageChart').getContext('2d');
-        if (pageChart) pageChart.destroy();
+        try {
+            const canvas = document.getElementById('pageChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            if (pageChart) pageChart.destroy();
 
-        // 按访问量排序，取前10
-        const entries = Object.entries(pageVisits)
-            .map(([path, count]) => ({
-                name: pageNameMap[path] || path.replace(/^\//, '').replace(/\/$/, '') || '主页',
-                count
-            }))
-            .sort((a, b) => b.count - a.count)
-            .slice(0, 10);
+            // 按访问量排序，取前10
+            const raw = pageVisits && typeof pageVisits === 'object' ? pageVisits : {};
+            const entries = Object.entries(raw)
+                .map(([path, count]) => ({
+                    name: pageNameMap[path] || path.replace(/^\//, '').replace(/\/$/, '') || '主页',
+                    count: Number(count) || 0
+                }))
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 10);
 
-        // 如果没有任何数据，显示占位
-        if (entries.length === 0) {
-            entries.push({ name: '暂无数据', count: 1 });
-        }
+            // 如果没有任何数据，显示占位
+            if (entries.length === 0) {
+                entries.push({ name: '暂无数据', count: 1 });
+            }
 
-        const labels = entries.map(e => e.name);
-        const data = entries.map(e => e.count);
-        const colors = entries.map((_, i) => chartColors[i % chartColors.length]);
+            const labels = entries.map(e => e.name);
+            const data = entries.map(e => e.count);
+            const colors = entries.map((_, i) => chartColors[i % chartColors.length]);
 
-        pageChart = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels,
-                datasets: [{
-                    data,
-                    backgroundColor: colors,
-                    borderColor: '#0f172a',
-                    borderWidth: 2,
-                    hoverOffset: 10
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'right',
-                        labels: {
-                            color: '#94a3b8',
-                            font: { size: 12 },
-                            padding: 15,
-                            generateLabels: function(chart) {
-                                const original = Chart.defaults.plugins.legend.labels.generateLabels(chart);
-                                return original.map(label => ({
-                                    ...label,
-                                    text: `${label.text} (${chart.data.datasets[0].data[label.index] || 0})`
-                                }));
+            pageChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels,
+                    datasets: [{
+                        data,
+                        backgroundColor: colors,
+                        borderColor: '#0f172a',
+                        borderWidth: 2,
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                color: '#94a3b8',
+                                font: { size: 12 },
+                                padding: 15,
+                                generateLabels: function(chart) {
+                                    const original = Chart.defaults.plugins.legend.labels.generateLabels(chart);
+                                    return original.map(label => ({
+                                        ...label,
+                                        text: `${label.text} (${chart.data.datasets[0].data[label.index] || 0})`
+                                    }));
+                                }
                             }
                         }
                     }
                 }
-            }
-        });
+            });
+        } catch (e) {
+            console.warn('页面分布图渲染失败:', e.message);
+        }
     }
 
     // ========== 更新最近访问记录 ==========
