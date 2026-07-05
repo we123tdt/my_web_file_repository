@@ -283,7 +283,7 @@
                 <h1>🤖 AI 助手</h1>
                 <button class="clear-btn" onclick="clearChat()">🗑️ 清除对话</button>
             </div>
-            <p>基于 DeepSeek AI，随时为你解答问题</p>
+            <p>基于 Llama 3.1 8B 模型，随时为你解答问题</p>
         </div>
 
         <div class="chat-messages" id="chatMessages"></div>
@@ -328,7 +328,7 @@
     function addWelcomeMessage(){
         const welcomeMsg = {
             role: 'assistant',
-            content: '你好！我是 AI 助手，基于 DeepSeek 模型。我可以帮你解答问题、编写代码、翻译、写作等等。有什么我可以帮你的吗？',
+            content: '你好！我是 AI 助手，基于 Llama 3.1 模型。我可以帮你解答问题、编写代码、翻译、写作等等。有什么我可以帮你的吗？',
             time: Date.now()
         };
         // 不保存欢迎消息到历史
