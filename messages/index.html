@@ -321,6 +321,145 @@
         }
     }
 
+    .message-card:hover .msg-delete{
+        opacity: 1;
+    }
+    .msg-delete{
+        background: rgba(239, 68, 68, 0.15);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        color: #f87171;
+        font-size: 12px;
+        padding: 3px 10px;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+        opacity: 0;
+        margin-left: 8px;
+        font-family: inherit;
+    }
+    .msg-delete:hover{
+        background: rgba(239, 68, 68, 0.3);
+        border-color: #f87171;
+    }
+
+    /* 登录按钮 */
+    .admin-btn{
+        padding: 8px 16px;
+        font-size: 13px;
+        font-weight: bold;
+        font-family: inherit;
+        background: transparent;
+        color: var(--accent-cyan, #87CEEB);
+        border: 1px solid rgba(135,206,235,0.3);
+        border-radius: 20px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .admin-btn:hover{
+        border-color: rgba(135,206,235,0.7);
+        box-shadow: 0 0 15px rgba(135,206,235,0.3);
+    }
+    .admin-btn.logged-in{
+        background: rgba(34, 197, 94, 0.15);
+        border-color: rgba(34, 197, 94, 0.5);
+        color: #4ade80;
+    }
+
+    /* 登录弹窗 */
+    .modal-overlay{
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 99999;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s;
+    }
+    .modal-overlay.active{
+        opacity: 1;
+        pointer-events: auto;
+    }
+    .modal-box{
+        background: linear-gradient(135deg, #1e293b, #0f172a);
+        border: 1px solid rgba(135,206,235,0.3);
+        border-radius: 16px;
+        padding: 30px;
+        width: 90%;
+        max-width: 380px;
+        box-shadow: 0 0 40px rgba(0,0,0,0.5);
+    }
+    .modal-box h3{
+        color: #87CEEB;
+        margin-bottom: 10px;
+        font-size: 18px;
+        text-align: center;
+    }
+    .modal-box .modal-desc{
+        color: #64748b;
+        font-size: 13px;
+        text-align: center;
+        margin-bottom: 18px;
+    }
+    .modal-box input{
+        width: 100%;
+        padding: 10px 14px;
+        background: #0f172a;
+        border: 1px solid rgba(135,206,235,0.3);
+        border-radius: 10px;
+        color: #e2e8f0;
+        font-size: 14px;
+        font-family: inherit;
+        outline: none;
+        margin-bottom: 14px;
+        transition: border-color 0.3s;
+    }
+    .modal-box input:focus{
+        border-color: rgba(135,206,235,0.7);
+    }
+    .modal-box .btn-row{
+        display: flex;
+        gap: 10px;
+    }
+    .modal-box .btn-row button{
+        flex: 1;
+        padding: 10px;
+        font-size: 14px;
+        font-weight: bold;
+        font-family: inherit;
+        border-radius: 10px;
+        cursor: pointer;
+        border: none;
+        transition: all 0.3s;
+    }
+    .btn-login{
+        background: linear-gradient(135deg, #87CEEB, #ADD8E6);
+        color: #0f172a;
+    }
+    .btn-login:hover{ transform: scale(1.02); }
+    .btn-login:disabled{ opacity: 0.5; cursor: not-allowed; transform: none; }
+    .btn-cancel{
+        background: rgba(71,85,105,0.5);
+        color: #94a3b8;
+    }
+    .btn-cancel:hover{ background: rgba(71,85,105,0.7); }
+    .btn-changepw{
+        margin-top: 10px;
+        width: 100%;
+        padding: 8px;
+        font-size: 12px;
+        font-family: inherit;
+        background: transparent;
+        border: 1px dashed rgba(135,206,235,0.3);
+        color: #64748b;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .btn-changepw:hover{ border-color: rgba(135,206,235,0.7); color: #94a3b8; }
+
     @media (max-width: 768px){
         .input-row{
             flex-direction: column;
@@ -341,6 +480,7 @@
 <div class="navbar">
     <div class="navbar-title">💬 留言板</div>
     <div class="navbar-right">
+        <button class="admin-btn" id="adminBtn" onclick="openLoginModal()" title="管理留言">🔑 管理</button>
         <a href="/" class="nav-btn">🏠 主页</a>
     </div>
 </div>
@@ -369,6 +509,26 @@
 
 <!-- 提示消息 -->
 <div class="toast" id="toast"></div>
+
+<!-- 登录弹窗 -->
+<div class="modal-overlay" id="loginModal" onclick="if(event.target===this)closeLoginModal()">
+    <div class="modal-box">
+        <h3>🔐 管理员登录</h3>
+        <div class="modal-desc" id="modalDesc">输入密码以管理留言</div>
+        <input type="password" id="loginPassword" placeholder="请输入密码" onkeydown="if(event.key==='Enter')doLogin()">
+        <div class="btn-row">
+            <button class="btn-cancel" onclick="closeLoginModal()">取消</button>
+            <button class="btn-login" id="loginBtn" onclick="doLogin()">登录</button>
+        </div>
+        <button class="btn-changepw" id="changePwBtn" style="display:none" onclick="showChangePw()">🔒 修改密码</button>
+        <button class="btn-changepw" id="logoutBtn2" style="display:none;color:#f87171;border-color:rgba(239,68,68,0.3)" onclick="doLogout();closeLoginModal()">🚪 退出登录</button>
+        <input type="password" id="newPassword" placeholder="输入新密码（至少4位）" style="display:none; margin-top:10px" onkeydown="if(event.key==='Enter')doChangePw()">
+        <div class="btn-row" id="changePwRow" style="display:none">
+            <button class="btn-cancel" onclick="hideChangePw()">取消</button>
+            <button class="btn-login" onclick="doChangePw()">确认修改</button>
+        </div>
+    </div>
+</div>
 
 <script>
     const contentEl = document.getElementById('messageContent');
@@ -461,6 +621,166 @@
         return `${month}-${day} ${h}:${m}`;
     }
 
+    // ===== 登录管理 =====
+    let adminToken = localStorage.getItem('adminToken') || '';
+    let isLoggedIn = false;
+
+    async function checkLogin(){
+        if(!adminToken) { isLoggedIn = false; updateAdminUI(); return; }
+        try{
+            const res = await fetch('/api/auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'verify', token: adminToken })
+            });
+            const data = await res.json();
+            isLoggedIn = data.valid;
+            if(!isLoggedIn) { adminToken = ''; localStorage.removeItem('adminToken'); }
+        } catch(e){ isLoggedIn = false; }
+        updateAdminUI();
+    }
+
+    function updateAdminUI(){
+        const btn = document.getElementById('adminBtn');
+        if(isLoggedIn){
+            btn.textContent = '✅ 管理';
+            btn.className = 'admin-btn logged-in';
+            btn.onclick = function(){
+                // 已登录：打开管理面板（修改密码 + 退出）
+                document.getElementById('loginModal').classList.add('active');
+                document.getElementById('modalDesc').textContent = '管理留言';
+                document.getElementById('loginPassword').style.display = 'none';
+                document.getElementById('loginBtn').style.display = 'none';
+                document.querySelector('#loginModal .btn-cancel').textContent = '关闭';
+                document.getElementById('changePwBtn').style.display = '';
+                document.getElementById('logoutBtn2').style.display = '';
+                hideChangePw();
+            };
+        } else {
+            btn.textContent = '🔑 管理';
+            btn.className = 'admin-btn';
+            btn.onclick = openLoginModal;
+        }
+        loadMessages();
+    }
+
+    function openLoginModal(){
+        document.getElementById('loginModal').classList.add('active');
+        document.getElementById('loginPassword').style.display = '';
+        document.getElementById('loginPassword').value = '';
+        document.getElementById('loginBtn').style.display = '';
+        document.querySelector('#loginModal .btn-cancel').textContent = '取消';
+        document.getElementById('modalDesc').textContent = '输入密码以管理留言';
+        document.getElementById('loginBtn').disabled = false;
+        document.getElementById('loginBtn').textContent = '登录';
+        document.getElementById('changePwBtn').style.display = 'none';
+        document.getElementById('logoutBtn2').style.display = 'none';
+        hideChangePw();
+        setTimeout(() => document.getElementById('loginPassword').focus(), 200);
+    }
+
+    function closeLoginModal(){
+        document.getElementById('loginModal').classList.remove('active');
+        document.getElementById('loginPassword').style.display = '';
+        document.getElementById('loginBtn').style.display = '';
+        document.querySelector('#loginModal .btn-cancel').textContent = '取消';
+        document.getElementById('changePwBtn').style.display = 'none';
+        document.getElementById('logoutBtn2').style.display = 'none';
+        hideChangePw();
+    }
+
+    async function doLogin(){
+        const pw = document.getElementById('loginPassword').value;
+        if(!pw){ showToast('请输入密码', 'error'); return; }
+        const btn = document.getElementById('loginBtn');
+        btn.disabled = true;
+        btn.textContent = '验证中...';
+        try{
+            const res = await fetch('/api/auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: pw })
+            });
+            const data = await res.json();
+            if(data.success){
+                adminToken = data.token;
+                localStorage.setItem('adminToken', adminToken);
+                isLoggedIn = true;
+                showToast('登录成功！可管理留言', 'success');
+                closeLoginModal();
+                updateAdminUI();
+            } else {
+                showToast(data.error || '密码错误', 'error');
+                document.getElementById('loginPassword').value = '';
+                document.getElementById('loginPassword').focus();
+            }
+        } catch(e){ showToast('网络错误', 'error'); }
+        btn.disabled = false;
+        btn.textContent = '登录';
+    }
+
+    async function doLogout(){
+        try{
+            await fetch('/api/auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'logout', token: adminToken })
+            });
+        } catch(e){}
+        adminToken = '';
+        localStorage.removeItem('adminToken');
+        isLoggedIn = false;
+        showToast('已退出管理', 'success');
+        updateAdminUI();
+    }
+
+    function showChangePw(){
+        document.getElementById('newPassword').style.display = '';
+        document.getElementById('changePwRow').style.display = 'flex';
+        document.getElementById('changePwBtn').style.display = 'none';
+    }
+    function hideChangePw(){
+        document.getElementById('newPassword').style.display = 'none';
+        document.getElementById('changePwRow').style.display = 'none';
+        if(isLoggedIn) document.getElementById('changePwBtn').style.display = '';
+    }
+    async function doChangePw(){
+        const pw = document.getElementById('newPassword').value.trim();
+        if(pw.length < 4){ showToast('密码至少4位', 'error'); return; }
+        try{
+            const res = await fetch('/api/auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + adminToken },
+                body: JSON.stringify({ action: 'change_password', newPassword: pw })
+            });
+            const data = await res.json();
+            if(data.success){
+                showToast('密码修改成功！', 'success');
+                hideChangePw();
+                document.getElementById('newPassword').value = '';
+            } else { showToast(data.error || '修改失败', 'error'); }
+        } catch(e){ showToast('网络错误', 'error'); }
+    }
+
+    // 删除留言
+    async function deleteMessage(id){
+        if(!confirm('确定删除这条留言？')) return;
+        try{
+            const res = await fetch('/api/messages?id=' + encodeURIComponent(id), {
+                method: 'DELETE',
+                headers: { 'Authorization': 'Bearer ' + adminToken }
+            });
+            const data = await res.json();
+            if(data.success){
+                showToast('已删除', 'success');
+                loadMessages();
+            } else {
+                showToast(data.error || '删除失败', 'error');
+                if(data.error === '请先登录'){ doLogout(); }
+            }
+        } catch(e){ showToast('网络错误', 'error'); }
+    }
+
     // 加载留言
     async function loadMessages(){
         const listEl = document.getElementById('messageList');
@@ -476,7 +796,10 @@
                     <div class="message-card">
                         <div class="message-top">
                             <span class="message-nickname">${escapeHtml(msg.nickname)}</span>
-                            <span class="message-time">${formatTime(msg.timestamp)}</span>
+                            <span style="display:flex;align-items:center;gap:10px">
+                                ${isLoggedIn ? '<button class="msg-delete" onclick="deleteMessage(\'' + msg.id + '\')" title="删除">✕</button>' : ''}
+                                <span class="message-time">${formatTime(msg.timestamp)}</span>
+                            </span>
                         </div>
                         <div class="message-content">${escapeHtml(msg.content)}</div>
                     </div>
@@ -508,7 +831,7 @@
     }
 
     // 初始加载
-    loadMessages();
+    checkLogin();
 
     // 每30秒自动刷新留言
     setInterval(loadMessages, 30000);
