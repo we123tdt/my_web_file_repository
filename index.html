@@ -501,11 +501,14 @@
         }
     }
     .visitor-count{
-        margin-top: 30px;
+        margin-top: 60px;
+        margin-bottom: 40px;
         color: var(--text-dim);
         font-size: 16px;
         letter-spacing: 1px;
         text-shadow: 0 0 10px rgba(135, 206, 235, 0.3);
+        position: relative;
+        z-index: 2;
     }
     .visitor-count .count-number{
         color: var(--accent-cyan);
@@ -529,6 +532,7 @@
         position: relative;
         transition: all 0.3s ease;
         backdrop-filter: blur(10px);
+        overflow: hidden;
     }
     .quote-box:hover{
         border-color: rgba(135, 206, 235, 0.6);
@@ -616,88 +620,7 @@
         animation: slideUp 0.3s ease;
     }
 
-    /* ===== 音乐播放器 ===== */
-    .music-player{
-        position: fixed;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: var(--navbar-bg);
-        backdrop-filter: blur(15px);
-        border: 1px solid var(--border-color);
-        border-radius: 50px;
-        padding: 8px 20px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        z-index: 9996;
-        box-shadow: 0 0 30px rgba(135, 206, 235, 0.2);
-        transition: all 0.5s;
-        max-width: 90vw;
-    }
-    .music-btn{
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #87CEEB, #ADD8E6);
-        border: none;
-        color: #0f172a;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 14px;
-        transition: all 0.3s ease;
-        flex-shrink: 0;
-    }
-    .music-btn:hover{
-        transform: scale(1.1);
-    }
-    .music-info{
-        color: var(--text-secondary);
-        font-size: 13px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 120px;
-    }
-    .music-progress{
-        width: 60px;
-        height: 4px;
-        background: rgba(255,255,255,0.2);
-        border-radius: 2px;
-        cursor: pointer;
-        position: relative;
-        flex-shrink: 0;
-    }
-    .music-progress-fill{
-        height: 100%;
-        background: linear-gradient(90deg, #87CEEB, #ADD8E6);
-        border-radius: 2px;
-        transition: width 0.1s linear;
-        width: 0%;
-    }
-    .music-volume{
-        width: 50px;
-        height: 4px;
-        background: rgba(255,255,255,0.2);
-        border-radius: 2px;
-        cursor: pointer;
-        position: relative;
-        flex-shrink: 0;
-    }
-    .music-volume-fill{
-        height: 100%;
-        background: linear-gradient(90deg, #87CEEB, #ADD8E6);
-        border-radius: 2px;
-        width: 70%;
-    }
-    .music-time{
-        color: var(--text-dim);
-        font-size: 11px;
-        font-family: 'Courier New', monospace;
-        flex-shrink: 0;
-    }
+
 
     /* ===== 鼠标粒子 Canvas ===== */
     #particleCanvas{
@@ -733,6 +656,7 @@
             <a href="weather/" class="nav-btn">🌤️ 天气</a>
             <a href="messages/" class="nav-btn">💬 留言</a>
             <a href="stats/" class="nav-btn">📊 统计</a>
+            <a href="music/" class="nav-btn">🎵 音乐</a>
             <div class="navbar-online" id="navbarOnline"><span class="online-dot"></span>加载中</div>
             <div class="navbar-time" id="navbarTime"></div>
         </div>
@@ -770,21 +694,6 @@
     </div>
     </div>
 
-    <!-- 音乐播放器 -->
-    <div class="music-player" id="musicPlayer">
-        <button class="music-btn" id="musicPlayBtn" onclick="toggleMusic()">▶</button>
-        <button class="music-btn" onclick="prevMusic()" style="width:28px;height:28px;font-size:12px;">⏮</button>
-        <button class="music-btn" onclick="nextMusic()" style="width:28px;height:28px;font-size:12px;">⏭</button>
-        <span class="music-info" id="musicInfo">未播放</span>
-        <div class="music-progress" id="musicProgress" onclick="setMusicProgress(event)">
-            <div class="music-progress-fill" id="musicProgressFill"></div>
-        </div>
-        <span class="music-time" id="musicTime">00:00</span>
-        <div class="music-volume" id="musicVolume" onclick="setMusicVolume(event)">
-            <div class="music-volume-fill" id="musicVolumeFill"></div>
-        </div>
-    </div>
-
     <!-- 回到顶部 -->
     <button class="back-to-top" id="backToTop" onclick="scrollToTop()">↑</button>
 
@@ -800,7 +709,6 @@
                 <li>互动头像</li>
                 <li>发光按钮</li>
                 <li>鼠标粒子特效</li>
-                <li>背景音乐播放器</li>
                 <li>主题切换</li>
                 <li>随机名言</li>
             </ul>
@@ -808,9 +716,6 @@
             <button class="glow-button" onclick="clearAllAlerts(); closeModal();">清除所有警告</button>
         </div>
     </div>
-
-    <!-- 音频元素 -->
-    <audio id="bgMusic" preload="metadata"></audio>
 
 <script>
     // ========== 配置常量 ==========
@@ -1281,117 +1186,21 @@
     // 每60秒自动刷新名言
     setInterval(refreshQuote, 60000);
 
-    // ===== 7. 音乐播放器 =====
-    const playlist = [
-        { title: '起风了', url: 'https://music.163.com/song/media/outer/url?id=1330348068.mp3' },
-        { title: '夜曲', url: 'https://music.163.com/song/media/outer/url?id=65530.mp3' },
-        { title: '晴天', url: 'https://music.163.com/song/media/outer/url?id=186016.mp3' },
-        { title: '稻香', url: 'https://music.163.com/song/media/outer/url?id=186015.mp3' },
-        { title: '平凡之路', url: 'https://music.163.com/song/media/outer/url?id=33475389.mp3' },
-        { title: '光年之外', url: 'https://music.163.com/song/media/outer/url?id=471200438.mp3' }
-    ];
-    let currentTrack = parseInt(localStorage.getItem('currentTrack')) || 0;
-    let isPlaying = false;
-    const audio = document.getElementById('bgMusic');
-
-    function loadTrack(index){
-        if(index < 0) index = playlist.length - 1;
-        if(index >= playlist.length) index = 0;
-        currentTrack = index;
-        localStorage.setItem('currentTrack', currentTrack);
-        audio.src = playlist[currentTrack].url;
-        document.getElementById('musicInfo').textContent = playlist[currentTrack].title;
-        if(isPlaying){
-            audio.play().catch(() => {
-                isPlaying = false;
-                document.getElementById('musicPlayBtn').textContent = '▶';
-            });
-        }
-        updateMusicTime();
-    }
-
-    function toggleMusic(){
-        if(audio.src === '' || audio.src === window.location.href){
-            loadTrack(currentTrack);
-        }
-        if(isPlaying){
-            audio.pause();
-            isPlaying = false;
-            document.getElementById('musicPlayBtn').textContent = '▶';
-        } else {
-            audio.play().catch(() => {
-                // 可能需要用户交互
-                isPlaying = false;
-                document.getElementById('musicPlayBtn').textContent = '▶';
-            });
-            isPlaying = true;
-            document.getElementById('musicPlayBtn').textContent = '⏸';
-        }
-    }
-
-    function prevMusic(){
-        loadTrack(currentTrack - 1);
-    }
-
-    function nextMusic(){
-        loadTrack(currentTrack + 1);
-    }
-
-    function updateMusicTime(){
-        const current = audio.currentTime || 0;
-        const duration = audio.duration || 0;
-        const minC = Math.floor(current / 60);
-        const secC = Math.floor(current % 60);
-        const minD = Math.floor(duration / 60);
-        const secD = Math.floor(duration % 60);
-        document.getElementById('musicTime').textContent =
-            `${String(minC).padStart(2, '0')}:${String(secC).padStart(2, '0')} / ${duration ? `${String(minD).padStart(2, '0')}:${String(secD).padStart(2, '0')}` : '--:--'}`;
-        if(duration > 0){
-            document.getElementById('musicProgressFill').style.width = (current / duration * 100) + '%';
-        }
-    }
-
-    function setMusicProgress(e){
-        const rect = e.currentTarget.getBoundingClientRect();
-        const x = (e.clientX - rect.left) / rect.width;
-        if(audio.duration){
-            audio.currentTime = x * audio.duration;
-        }
-    }
-
-    function setMusicVolume(e){
-        const rect = e.currentTarget.getBoundingClientRect();
-        const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-        audio.volume = x;
-        document.getElementById('musicVolumeFill').style.width = (x * 100) + '%';
-        localStorage.setItem('musicVolume', x);
-    }
-
-    // 恢复音量
-    const savedVolume = parseFloat(localStorage.getItem('musicVolume')) || 0.7;
-    audio.volume = savedVolume;
-    document.getElementById('musicVolumeFill').style.width = (savedVolume * 100) + '%';
-
-    audio.addEventListener('timeupdate', updateMusicTime);
-    audio.addEventListener('loadedmetadata', updateMusicTime);
-    audio.addEventListener('ended', nextMusic);
-    audio.addEventListener('error', function(){
-        document.getElementById('musicInfo').textContent = '加载失败，点击切换';
-        if(isPlaying){
-            isPlaying = false;
-            document.getElementById('musicPlayBtn').textContent = '▶';
-        }
-    });
-
     // 键盘快捷键
-    document.addEventListener('keydown', function(e){
-        if(e.key === ' ' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA'){
-            e.preventDefault();
-            toggleMusic();
-        }
-        if(e.key === 'ArrowRight' && (e.ctrlKey || e.metaKey)) nextMusic();
-        if(e.key === 'ArrowLeft' && (e.ctrlKey || e.metaKey)) prevMusic();
-    });
+
+    // 访问统计追踪
+    (function trackVisit(){
+        try {
+            fetch('/api/stats', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    page: '/',
+                    pageName: '主页'
+                })
+            }).catch(()=>{});
+        } catch(e) {}
+    })();
 </script>
 </body>
 </html>
