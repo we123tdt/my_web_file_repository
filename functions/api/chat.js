@@ -46,7 +46,7 @@ export async function onRequest(context) {
         // 方式一：AI Binding
         if (env.AI) {
             try {
-                const result = await env.AI.run('@cf/qwen/qwen1.5-14b-chat-awq', {
+                const result = await env.AI.run('@cf/qwen/qwen2.5-7b-instruct', {
                     messages: aiMessages,
                     max_tokens: 2048,
                     temperature: 0.7
@@ -60,7 +60,7 @@ export async function onRequest(context) {
             try {
                 const tokenPreview = env.CF_API_TOKEN.substring(0, 8) + '...';
                 const res = await fetch(
-                    `https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/ai/run/@cf/qwen/qwen1.5-14b-chat-awq`,
+                    `https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/ai/run/@cf/qwen/qwen2.5-7b-instruct`,
                     {
                         method: 'POST',
                         headers: {
