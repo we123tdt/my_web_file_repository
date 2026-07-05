@@ -679,6 +679,20 @@
     init2048();
     newGuessGame();
     newMineGame();
+
+    // 访问统计追踪
+    (function trackVisit(){
+        try {
+            fetch('/api/stats', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    page: '/games/',
+                    pageName: '游戏'
+                })
+            }).catch(()=>{});
+        } catch(e) {}
+    })();
 </script>
 </body>
 </html>
