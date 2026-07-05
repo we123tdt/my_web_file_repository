@@ -481,6 +481,13 @@
             sendMessage();
         }
     });
+
+    // 访问统计追踪
+    fetch('/api/stats', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ page: '/chat/', pageName: 'AI 聊天' })
+    }).catch(()=>{});
 </script>
 </body>
 </html>
