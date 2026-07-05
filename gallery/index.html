@@ -363,6 +363,20 @@
     // ========== 初始化 ==========
     renderCategories();
     renderGallery();
+
+    // 访问统计追踪
+    (function trackVisit(){
+        try {
+            fetch('/api/stats', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    page: '/gallery/',
+                    pageName: '画廊'
+                })
+            }).catch(()=>{});
+        } catch(e) {}
+    })();
 </script>
 </body>
 </html>
