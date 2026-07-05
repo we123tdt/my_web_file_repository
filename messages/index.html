@@ -512,5 +512,19 @@
 
     // 每30秒自动刷新留言
     setInterval(loadMessages, 30000);
+
+    // 访问统计追踪
+    (function trackVisit(){
+        try {
+            fetch('/api/stats', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    page: '/messages/',
+                    pageName: '留言'
+                })
+            }).catch(()=>{});
+        } catch(e) {}
+    })();
 </script>
 </html>
