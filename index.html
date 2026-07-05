@@ -13,7 +13,7 @@
         box-sizing: border-box;
     }
     body{
-        background-color: #0f172a; 
+        background-color: var(--bg-primary); 
         text-align: center;
         font-family: 'Noto Sans SC', 'Orbitron', 'Audiowide', sans-serif;
         overflow-y: auto;
@@ -40,7 +40,7 @@
         --glow-cyan: 0 0 20px rgba(135, 206, 235, 0.6);
     }
     body.light-theme{
-        --bg-primary: #f0f4f8;
+        --bg-primary: #ffffff;
         --bg-secondary: #e2e8f0;
         --bg-card: rgba(255, 255, 255, 0.9);
         --text-primary: #1e293b;
@@ -731,6 +731,8 @@
     let drops = [];
     let isAttacking = false;
     let lastTime = 0;
+    let rainEnabled = true;
+    let rainAnimId = null;
 
     function resizeCanvas(){
         canvas.width = window.innerWidth;
@@ -775,12 +777,36 @@
         lastTime = currentTime;
         updateRain(deltaTime);
         drawRain();
-        requestAnimationFrame(animateRain);
+        if(rainEnabled){
+            rainAnimId = requestAnimationFrame(animateRain);
+        }
+    }
+    function stopRain(){
+        rainEnabled = false;
+        if(rainAnimId){
+            cancelAnimationFrame(rainAnimId);
+            rainAnimId = null;
+        }
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        canvas.style.display = 'none';
+    }
+    function startRain(){
+        rainEnabled = true;
+        canvas.style.display = '';
+        lastTime = 0;
+        rainAnimId = requestAnimationFrame(animateRain);
     }
     window.addEventListener('resize', () => { resizeCanvas(); createRaindrops(); });
     resizeCanvas();
     createRaindrops();
-    requestAnimationFrame(animateRain);
+
+    // 从 localStorage 恢复雨滴状态
+    const savedRain = localStorage.getItem('rainEnabled');
+    if(savedRain !== null && savedRain === 'false'){
+        stopRain();
+    } else {
+        rainAnimId = requestAnimationFrame(animateRain);
+    }
 
     // ========== 打字机效果 ==========
     const typewriterEl = document.getElementById('typewriter');
@@ -1082,19 +1108,22 @@
 
     // ===== 3. 主题切换 =====
     let currentTheme = localStorage.getItem('theme') || 'dark';
-    document.body.classList.add('dark-theme');
 
     function toggleTheme(){
         if(currentTheme === 'dark'){
             document.body.className = 'light-theme';
             currentTheme = 'light';
             document.getElementById('themeBtn').textContent = '☀️';
+            // 浅色主题自动关闭雨滴
+            stopRain();
+            document.getElementById('rainBtn').textContent = '☁️';
+            localStorage.setItem('rainEnabled', 'false');
         } else if(currentTheme === 'light'){
             document.body.className = 'cyber-theme';
             currentTheme = 'cyber';
             document.getElementById('themeBtn').textContent = '💜';
         } else {
-            document.body.className = '';
+            document.body.className = 'dark-theme';
             currentTheme = 'dark';
             document.getElementById('themeBtn').textContent = '🌙';
         }
@@ -1105,9 +1134,41 @@
     if(currentTheme === 'light'){
         document.body.className = 'light-theme';
         document.getElementById('themeBtn').textContent = '☀️';
+        // 浅色主题：雨滴默认关闭，恢复按钮图标
+        if(savedRain === null || savedRain === 'false'){
+            stopRain();
+            document.getElementById('rainBtn').textContent = '☁️';
+        }
+        if(savedRain === 'true'){
+            startRain();
+            document.getElementById('rainBtn').textContent = '🌧️';
+        }
     } else if(currentTheme === 'cyber'){
         document.body.className = 'cyber-theme';
         document.getElementById('themeBtn').textContent = '💜';
+    } else {
+        document.body.className = 'dark-theme';
+        document.getElementById('themeBtn').textContent = '🌙';
+    }
+
+    // 雨滴按钮状态同步
+    if(rainEnabled){
+        document.getElementById('rainBtn').textContent = '🌧️';
+    } else {
+        document.getElementById('rainBtn').textContent = '☁️';
+    }
+
+    // ===== 3.5 雨滴开关 =====
+    function toggleRain(){
+        if(rainEnabled){
+            stopRain();
+            document.getElementById('rainBtn').textContent = '☁️';
+            localStorage.setItem('rainEnabled', 'false');
+        } else {
+            startRain();
+            document.getElementById('rainBtn').textContent = '🌧️';
+            localStorage.setItem('rainEnabled', 'true');
+        }
     }
 
     // ===== 4. 滚动进度条 =====
