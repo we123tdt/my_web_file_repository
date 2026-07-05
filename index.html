@@ -1386,6 +1386,11 @@
     setInterval(refreshQuote, 60000);
 
     // ===== 7. 热点聚合 =====
+    function escapeHtml(str){
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
     function timeAgo(isoStr){
         if(!isoStr) return '';
         const diff = Date.now() - new Date(isoStr).getTime();
