@@ -195,7 +195,7 @@
 
         <!-- 访问趋势图 -->
         <div class="chart-container">
-            <div class="chart-title">📈 访问趋势（模拟数据）</div>
+            <div class="chart-title">📈 访问趋势（最近 15 天）</div>
             <div class="chart-wrapper">
                 <canvas id="visitChart"></canvas>
             </div>
@@ -203,7 +203,7 @@
 
         <!-- 页面分布图 -->
         <div class="chart-container">
-            <div class="chart-title">📊 页面访问分布（模拟数据）</div>
+            <div class="chart-title">📊 页面访问分布</div>
             <div class="chart-wrapper">
                 <canvas id="pageChart"></canvas>
             </div>
@@ -222,76 +222,109 @@
     </div>
 
 <script>
-    // ========== 获取统计数据 ==========
-    async function loadStats(){
+    // ========== 页面名称映射 ==========
+    const pageNameMap = {
+        '/': '主页',
+        '/links/': '导航',
+        '/gallery/': '画廊',
+        '/games/': '游戏',
+        '/chat/': 'AI 聊天',
+        '/time/': '时光机',
+        '/weather/': '天气',
+        '/messages/': '留言板',
+        '/stats/': '统计',
+        '/files.html': '文件',
+        '/upload.html': '上传'
+    };
+
+    const chartColors = [
+        '#87CEEB', '#60a5fa', '#4ade80', '#fbbf24',
+        '#a78bfa', '#f472b6', '#2dd4bf', '#f87171', '#94a3b8',
+        '#fb923c', '#34d399'
+    ];
+
+    let visitChart = null;
+    let pageChart = null;
+
+    // ========== 记录本次访问 ==========
+    async function recordVisit() {
         try {
-            // 获取访客数
-            const visitorRes = await fetch('/api/visitor', { cache: 'no-store' });
+            const path = window.location.pathname;
+            const pageName = pageNameMap[path] || path;
+            await fetch('/api/stats', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ page: path, pageName })
+            });
+        } catch (e) { /* 静默失败 */ }
+    }
+
+    // ========== 获取统计数据并更新所有UI ==========
+    async function loadAllStats() {
+        try {
+            const [visitorRes, onlineRes, msgRes, statsRes] = await Promise.all([
+                fetch('/api/visitor', { cache: 'no-store' }),
+                fetch('/api/online-users', { cache: 'no-store' }),
+                fetch('/api/messages', { cache: 'no-store' }),
+                fetch('/api/stats', { cache: 'no-store' })
+            ]);
+
             const visitorData = await visitorRes.json();
-            document.getElementById('totalVisitors').textContent = visitorData.count?.toLocaleString() || '--';
-
-            // 获取在线人数
-            const onlineRes = await fetch('/api/online-users', { cache: 'no-store' });
             const onlineData = await onlineRes.json();
-            document.getElementById('onlineNow').textContent = onlineData.count || '1';
-
-            // 获取留言数
-            const msgRes = await fetch('/api/messages', { cache: 'no-store' });
             const msgData = await msgRes.json();
+            const statsData = await statsRes.json();
+
+            // 更新卡片
+            document.getElementById('totalVisitors').textContent = visitorData.count?.toLocaleString() || '0';
+            document.getElementById('onlineNow').textContent = onlineData.count || '0';
             document.getElementById('totalMessages').textContent = msgData.messages?.length || '0';
+            document.getElementById('todayVisits').textContent = statsData.todayVisits || '0';
 
-            // 今日访问（从 localStorage 模拟）
-            const today = new Date().toDateString();
-            const todayData = JSON.parse(localStorage.getItem('todayVisits') || '{"date":"","count":0}');
-            if(todayData.date !== today){
-                todayData.date = today;
-                todayData.count = 1;
-            } else {
-                todayData.count++;
-            }
-            localStorage.setItem('todayVisits', JSON.stringify(todayData));
-            document.getElementById('todayVisits').textContent = todayData.count;
+            // 更新图表
+            updateVisitChart(statsData.dailyVisits || {});
+            updatePageChart(statsData.pageVisits || {});
+            updateRecentVisits(statsData.recentVisits || []);
 
-        } catch(e){
-            // 使用 localStorage 数据
-            const stored = localStorage.getItem('visitorCount');
-            document.getElementById('totalVisitors').textContent = stored || '0';
-            document.getElementById('onlineNow').textContent = '1';
+        } catch (e) {
+            document.getElementById('totalVisitors').textContent = '--';
+            document.getElementById('onlineNow').textContent = '--';
             document.getElementById('totalMessages').textContent = '--';
             document.getElementById('todayVisits').textContent = '--';
         }
     }
 
-    // ========== 生成模拟访问数据 ==========
-    function generateVisitData(){
+    // ========== 更新访问趋势图 ==========
+    function updateVisitChart(dailyVisits) {
+        const ctx = document.getElementById('visitChart').getContext('2d');
+
+        // 生成最近 15 天的标签和数据
         const days = [];
         const visits = [];
         const now = new Date();
-        for(let i = 14; i >= 0; i--){
+        for (let i = 14; i >= 0; i--) {
             const d = new Date(now);
             d.setDate(d.getDate() - i);
-            days.push(`${d.getMonth()+1}/${d.getDate()}`);
-            visits.push(Math.floor(Math.random() * 30) + 5);
+            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            days.push(`${d.getMonth() + 1}/${d.getDate()}`);
+            visits.push(dailyVisits[key] || 0);
         }
-        return { days, visits };
-    }
 
-    // ========== 访问趋势图 ==========
-    function initVisitChart(){
-        const data = generateVisitData();
-        const ctx = document.getElementById('visitChart').getContext('2d');
+        // 如果所有数据都是0，说明刚部署还没数据，显示提示
+        const hasData = visits.some(v => v > 0);
+
+        if (visitChart) visitChart.destroy();
 
         const gradient = ctx.createLinearGradient(0, 0, 0, 300);
         gradient.addColorStop(0, 'rgba(135, 206, 235, 0.3)');
         gradient.addColorStop(1, 'rgba(135, 206, 235, 0)');
 
-        new Chart(ctx, {
+        visitChart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: data.days,
+                labels: days,
                 datasets: [{
                     label: '访问量',
-                    data: data.visits,
+                    data: visits,
                     borderColor: '#87CEEB',
                     backgroundColor: gradient,
                     borderWidth: 2,
@@ -308,7 +341,12 @@
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { display: false }
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => hasData ? `${ctx.parsed.y} 次访问` : '暂无数据'
+                        }
+                    }
                 },
                 scales: {
                     x: {
@@ -317,7 +355,12 @@
                     },
                     y: {
                         grid: { color: 'rgba(135, 206, 235, 0.1)' },
-                        ticks: { color: '#64748b', font: { size: 11 }, stepSize: 10 },
+                        ticks: {
+                            color: '#64748b',
+                            font: { size: 11 },
+                            stepSize: hasData ? undefined : 1,
+                            precision: 0
+                        },
                         beginAtZero: true
                     }
                 }
@@ -325,30 +368,36 @@
         });
     }
 
-    // ========== 页面分布图 ==========
-    function initPageChart(){
+    // ========== 更新页面分布图 ==========
+    function updatePageChart(pageVisits) {
         const ctx = document.getElementById('pageChart').getContext('2d');
+        if (pageChart) pageChart.destroy();
 
-        new Chart(ctx, {
+        // 按访问量排序，取前10
+        const entries = Object.entries(pageVisits)
+            .map(([path, count]) => ({
+                name: pageNameMap[path] || path.replace(/^\//, '').replace(/\/$/, '') || '主页',
+                count
+            }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 10);
+
+        // 如果没有任何数据，显示占位
+        if (entries.length === 0) {
+            entries.push({ name: '暂无数据', count: 1 });
+        }
+
+        const labels = entries.map(e => e.name);
+        const data = entries.map(e => e.count);
+        const colors = entries.map((_, i) => chartColors[i % chartColors.length]);
+
+        pageChart = new Chart(ctx, {
             type: 'doughnut',
             data: {
-                labels: ['主页', '导航', '画廊', '游戏', 'AI 聊天', '时光机', '天气', '留言板', '统计'],
+                labels,
                 datasets: [{
-                    data: [
-                        Math.floor(Math.random() * 50 + 30),
-                        Math.floor(Math.random() * 30 + 15),
-                        Math.floor(Math.random() * 20 + 10),
-                        Math.floor(Math.random() * 25 + 10),
-                        Math.floor(Math.random() * 15 + 5),
-                        Math.floor(Math.random() * 20 + 10),
-                        Math.floor(Math.random() * 20 + 10),
-                        Math.floor(Math.random() * 15 + 5),
-                        Math.floor(Math.random() * 10 + 3)
-                    ],
-                    backgroundColor: [
-                        '#87CEEB', '#60a5fa', '#4ade80', '#fbbf24',
-                        '#a78bfa', '#f472b6', '#2dd4bf', '#f87171', '#94a3b8'
-                    ],
+                    data,
+                    backgroundColor: colors,
                     borderColor: '#0f172a',
                     borderWidth: 2,
                     hoverOffset: 10
@@ -363,7 +412,14 @@
                         labels: {
                             color: '#94a3b8',
                             font: { size: 12 },
-                            padding: 15
+                            padding: 15,
+                            generateLabels: function(chart) {
+                                const original = Chart.defaults.plugins.legend.labels.generateLabels(chart);
+                                return original.map(label => ({
+                                    ...label,
+                                    text: `${label.text} (${chart.data.datasets[0].data[label.index] || 0})`
+                                }));
+                            }
                         }
                     }
                 }
@@ -371,49 +427,47 @@
         });
     }
 
-    // ========== 最近访问记录 ==========
-    function loadRecentVisits(){
+    // ========== 更新最近访问记录 ==========
+    function updateRecentVisits(records) {
         const container = document.getElementById('recentVisits');
 
-        // 从 localStorage 获取访问记录
-        let records = [];
+        // 同时保留 localStorage 作为补充，合并去重
+        let localRecords = [];
         try {
             const saved = localStorage.getItem('visitRecords');
-            if(saved) records = JSON.parse(saved);
-        } catch(e) {}
+            if (saved) localRecords = JSON.parse(saved);
+        } catch (e) {}
 
-        // 添加当前访问
-        const now = new Date();
-        const pages = ['/', '/links/', '/gallery/', '/games/', '/chat/', '/time/', '/weather/', '/messages/', '/stats/'];
-        const pageNames = ['主页', '导航', '画廊', '游戏', 'AI 聊天', '时光机', '天气', '留言板', '统计'];
-        const currentPath = window.location.pathname;
+        // 合并：服务端记录 + 本地记录，取最近 20 条，去重
+        const allRecords = [...records, ...localRecords];
+        const seen = new Set();
+        const merged = [];
+        for (const r of allRecords) {
+            const key = `${r.page}_${r.time}`;
+            if (!seen.has(key)) {
+                seen.add(key);
+                merged.push(r);
+            }
+        }
+        merged.sort((a, b) => new Date(b.time) - new Date(a.time));
+        const display = merged.slice(0, 20);
 
-        records.unshift({
-            page: currentPath,
-            pageName: pageNames[pages.indexOf(currentPath)] || '未知',
-            time: now.toISOString()
-        });
-
-        // 保留最近 20 条
-        if(records.length > 20) records = records.slice(0, 20);
-        localStorage.setItem('visitRecords', JSON.stringify(records));
-
-        if(records.length === 0){
+        if (display.length === 0) {
             container.innerHTML = `
                 <div class="empty-state">
                     <div class="icon">📡</div>
-                    <p>还没有访问记录</p>
+                    <p>还没有访问记录，数据会随着访问自动积累</p>
                 </div>
             `;
             return;
         }
 
-        container.innerHTML = records.map(r => {
+        container.innerHTML = display.map(r => {
             const d = new Date(r.time);
             const timeStr = `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
             return `
                 <div class="recent-item">
-                    <span class="recent-page">${r.pageName || r.page}</span>
+                    <span class="recent-page">${r.pageName || r.page || '未知'}</span>
                     <span class="recent-time">${timeStr}</span>
                 </div>
             `;
@@ -421,13 +475,10 @@
     }
 
     // ========== 初始化 ==========
-    loadStats();
-    initVisitChart();
-    initPageChart();
-    loadRecentVisits();
+    recordVisit().then(() => loadAllStats());
 
     // 每 30 秒刷新统计数据
-    setInterval(loadStats, 30000);
+    setInterval(loadAllStats, 30000);
 </script>
 </body>
 </html>
