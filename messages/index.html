@@ -221,6 +221,52 @@
         border-color: rgba(135, 206, 235, 0.4);
         box-shadow: 0 0 20px rgba(135, 206, 235, 0.1);
     }
+    /* 置顶留言特殊样式 */
+    .message-card.pinned{
+        border: 1px solid rgba(251, 191, 36, 0.5);
+        background: linear-gradient(135deg, #2a2410, #1a1505);
+        box-shadow: 0 0 25px rgba(251, 191, 36, 0.15);
+    }
+    .message-card.pinned:hover{
+        border-color: rgba(251, 191, 36, 0.7);
+        box-shadow: 0 0 30px rgba(251, 191, 36, 0.25);
+    }
+    .pin-badge{
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        font-size: 11px;
+        font-weight: bold;
+        padding: 2px 8px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.2));
+        color: #fbbf24;
+        border: 1px solid rgba(251, 191, 36, 0.4);
+        margin-left: 8px;
+    }
+    .msg-pin{
+        background: rgba(251, 191, 36, 0.15);
+        border: 1px solid rgba(251, 191, 36, 0.3);
+        color: #fbbf24;
+        font-size: 12px;
+        padding: 3px 10px;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+        opacity: 0;
+        margin-left: 8px;
+        font-family: inherit;
+    }
+    .message-card:hover .msg-pin{ opacity: 1; }
+    .msg-pin:hover{
+        background: rgba(251, 191, 36, 0.3);
+        border-color: #fbbf24;
+    }
+    .msg-pin.active{
+        opacity: 1;
+        background: rgba(251, 191, 36, 0.25);
+        border-color: rgba(251, 191, 36, 0.6);
+    }
     .message-top{
         display: flex;
         align-items: center;
@@ -781,6 +827,28 @@
         } catch(e){ showToast('网络错误', 'error'); }
     }
 
+    // 置顶/取消置顶留言
+    async function togglePin(id, pinned){
+        try{
+            const res = await fetch('/api/messages', {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + adminToken
+                },
+                body: JSON.stringify({ id, pinned })
+            });
+            const data = await res.json();
+            if(data.success){
+                showToast(pinned ? '已置顶' : '已取消置顶', 'success');
+                loadMessages();
+            } else {
+                showToast(data.error || '操作失败', 'error');
+                if(data.error === '请先登录'){ doLogout(); }
+            }
+        } catch(e){ showToast('网络错误', 'error'); }
+    }
+
     // 加载留言
     async function loadMessages(){
         const listEl = document.getElementById('messageList');
@@ -792,18 +860,31 @@
 
             if(data.success && data.messages.length > 0){
                 countEl.textContent = `共 ${data.messages.length} 条`;
-                listEl.innerHTML = data.messages.map(msg => `
-                    <div class="message-card">
+                listEl.innerHTML = data.messages.map(msg => {
+                    const pinnedCls = msg.pinned ? ' pinned' : '';
+                    const pinBadge = msg.pinned ? '<span class="pin-badge">📌 置顶</span>' : '';
+                    const pinBtn = isLoggedIn
+                        ? `<button class="msg-pin${msg.pinned ? ' active' : ''}" onclick="togglePin('${msg.id}', ${!msg.pinned})" title="${msg.pinned ? '取消置顶' : '置顶'}">${msg.pinned ? '📌 取消置顶' : '📌 置顶'}</button>`
+                        : '';
+                    const delBtn = isLoggedIn
+                        ? `<button class="msg-delete" onclick="deleteMessage('${msg.id}')" title="删除">✕</button>`
+                        : '';
+                    return `
+                    <div class="message-card${pinnedCls}">
                         <div class="message-top">
-                            <span class="message-nickname">${escapeHtml(msg.nickname)}</span>
+                            <span style="display:flex;align-items:center">
+                                <span class="message-nickname">${escapeHtml(msg.nickname)}</span>
+                                ${pinBadge}
+                            </span>
                             <span style="display:flex;align-items:center;gap:10px">
-                                ${isLoggedIn ? '<button class="msg-delete" onclick="deleteMessage(\'' + msg.id + '\')" title="删除">✕</button>' : ''}
+                                ${pinBtn}
+                                ${delBtn}
                                 <span class="message-time">${formatTime(msg.timestamp)}</span>
                             </span>
                         </div>
                         <div class="message-content">${escapeHtml(msg.content)}</div>
-                    </div>
-                `).join('');
+                    </div>`;
+                }).join('');
             } else {
                 countEl.textContent = '';
                 listEl.innerHTML = `
