@@ -20,8 +20,13 @@ export async function onRequest(context) {
                     messages = JSON.parse(stored);
                 } catch (e) {}
             }
-            // 按时间倒序，最新在前
-            messages.sort((a, b) => b.timestamp - a.timestamp);
+            // 排序：置顶优先，同级别内按时间倒序（最新在前）
+            messages.sort((a, b) => {
+                const pa = a.pinned ? 1 : 0;
+                const pb = b.pinned ? 1 : 0;
+                if (pa !== pb) return pb - pa;
+                return b.timestamp - a.timestamp;
+            });
             // 最多返回200条
             return new Response(JSON.stringify({
                 success: true,
@@ -76,6 +81,58 @@ export async function onRequest(context) {
             }
             await env.VISITOR_KV.put('messages', JSON.stringify(messages));
             return new Response(JSON.stringify({ success: true }), {
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+
+        // ===== PATCH: 置顶/取消置顶留言（需登录） =====
+        if (request.method === 'PATCH') {
+            const authHeader = request.headers.get('Authorization') || '';
+            const token = authHeader.replace('Bearer ', '');
+            let isAuthed = false;
+            if (token) {
+                const sessionData = await env.VISITOR_KV.get(`session_${token}`);
+                if (sessionData) {
+                    try {
+                        const session = JSON.parse(sessionData);
+                        if (session.expires > Date.now()) isAuthed = true;
+                    } catch (e) {}
+                }
+            }
+            if (!isAuthed) {
+                return new Response(JSON.stringify({ success: false, error: '请先登录' }), {
+                    status: 401,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+            const body = await request.json();
+            const msgId = body.id;
+            const pinned = !!body.pinned;
+            if (!msgId) {
+                return new Response(JSON.stringify({ success: false, error: '缺少消息ID' }), {
+                    status: 400,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+            const stored = await env.VISITOR_KV.get('messages');
+            let messages = [];
+            if (stored) { try { messages = JSON.parse(stored); } catch (e) {} }
+            const target = messages.find(m => m.id === msgId);
+            if (!target) {
+                return new Response(JSON.stringify({ success: false, error: '留言不存在' }), {
+                    status: 404,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+            if (pinned) {
+                target.pinned = true;
+                target.pinnedAt = Date.now();
+            } else {
+                delete target.pinned;
+                delete target.pinnedAt;
+            }
+            await env.VISITOR_KV.put('messages', JSON.stringify(messages));
+            return new Response(JSON.stringify({ success: true, pinned: pinned }), {
                 headers: { 'Content-Type': 'application/json' }
             });
         }
